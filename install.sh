@@ -108,7 +108,7 @@ PACMAN_PKGS=(
     firefox telegram-desktop
 
     # Ofis & not
-    libreoffice-fresh hunspell hunspell-en_us obsidian
+    hunspell hunspell-en_us obsidian
 
     # Media
     obs-studio p7zip mpv
@@ -204,6 +204,9 @@ AUR_PKGS=(
 
     # Tema
     adw-gtk3
+
+    # Ofis
+    onlyoffice-bin
 
     # Uygulamalar
     visual-studio-code-bin
