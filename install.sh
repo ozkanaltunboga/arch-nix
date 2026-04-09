@@ -18,6 +18,13 @@ step()  { echo -e "\n${BOLD}${CYAN}━━━ $* ━━━${NC}"; }
 
 [[ $EUID -eq 0 ]] && error "Bu scripti root olarak çalıştırmayın! (sudo kullanmayın)"
 
+# --- Sudo keepalive ---
+# Şifreyi başta bir kez sor, sonra arka planda sürekli yenile
+sudo -v || error "sudo yetkisi alınamadı"
+(while true; do sudo -n true; sleep 50; done) 2>/dev/null &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null' EXIT
+
 # ============================================================
 # 0. DONANIM ALGILAMA
 # ============================================================
