@@ -108,7 +108,7 @@ PACMAN_PKGS=(
     firefox telegram-desktop
 
     # Ofis & not
-    libreoffice-qt6 hunspell hunspell-en_us obsidian
+    libreoffice-fresh hunspell hunspell-en_us obsidian
 
     # Media
     obs-studio p7zip mpv
