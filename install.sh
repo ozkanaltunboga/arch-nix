@@ -195,15 +195,15 @@ AUR_PKGS=(
     mpvpaper
     networkmanager-dmenu-git
     swayosd-git
-    swaynotificationcenter
+    swaync
     eww
 
     # Fontlar
-    ttf-udev-gothic-nerd
-    iosevka-nerd-font
+    ttf-udev-gothic
+    ttf-iosevka-nerd
 
     # Tema
-    adw-gtk3
+    adw-gtk-theme
 
     # Ofis
     onlyoffice-bin
@@ -483,7 +483,9 @@ systemctl --user enable swayosd.service 2>/dev/null || true
 info "SwayOSD servisi yapılandırıldı"
 
 # Kullanıcı grupları
-sudo usermod -aG networkmanager,wheel,video,adbusers,libvirt,docker,wireshark "$USER"
+for grp in NetworkManager wheel video libvirt docker wireshark; do
+    sudo usermod -aG "$grp" "$USER" 2>/dev/null || warn "Grup bulunamadı: $grp"
+done
 info "Kullanıcı grupları güncellendi"
 
 # ============================================================
