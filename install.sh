@@ -602,7 +602,7 @@ fi
 # 14. FLATPAK
 # ============================================================
 step "Flatpak yapılandırılıyor"
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 info "Flathub deposu eklendi"
 
 # ============================================================
