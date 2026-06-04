@@ -1,6 +1,5 @@
 # ============================================================
 # .zshrc — CachyOS / Arch Linux
-# zsh/default.nix Home Manager modülünden dönüştürüldü
 # ============================================================
 
 # Oh My Zsh
@@ -29,16 +28,17 @@ setopt HIST_IGNORE_ALL_DUPS
 autoload -Uz compinit && compinit
 
 # ─── Ortam değişkenleri ──────────────────────────────────────
-export DOTFILES="$HOME/dotfiles"
+export DOTFILES="$HOME/.hyprland-dots"
 export hypr="$HOME/.config/hypr"
 export programs="$HOME/.config"
 export EDITOR="nvim"
 export VISUAL="nvim"
 export PATH="$HOME/.local/bin:$PATH"
+export WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
 # Wayland
-export NIXOS_OZONE_WL=1
 export QT_QPA_PLATFORM=wayland
+export ELECTRON_OZONE_PLATFORM_HINT=wayland
 export GDK_BACKEND=wayland,x11
 
 # ─── Aliases ─────────────────────────────────────────────────
@@ -55,6 +55,4 @@ alias edinstall='$EDITOR $DOTFILES/install.sh'
 alias gitavail='ssh-add $HOME/Documents/keys/github_key'
 
 # ─── Ek fonksiyonlar ─────────────────────────────────────────
-source "$HOME/.config/hypr/../../../dotfiles/config/programs/zsh/zsh-init.sh" 2>/dev/null \
-    || source "${DOTFILES:-$HOME/dotfiles}/config/programs/zsh/zsh-init.sh" 2>/dev/null \
-    || true
+source "$HOME/.config/zsh/zsh-init.sh" 2>/dev/null || true

@@ -7,7 +7,6 @@ CACHE_LIMIT=600 # 1 Hour
 
 # UPDATED: Script Paths now point to your new Hyprland calendar setup
 UPDATER_SCRIPT="$HOME/.config/hypr/scripts/quickshell/calendar/schedule/get_schedule.py"
-SHELL_NIX="$HOME/.config/hypr/scripts/quickshell/calendar/schedule/shell.nix"
 
 mkdir -p "$CACHE_DIR"
 
@@ -17,7 +16,7 @@ trigger_update() {
         return # Silently exit if an update is already in progress
     fi
     
-    nix-shell "$SHELL_NIX" --run "python3 '$UPDATER_SCRIPT'" >/dev/null 2>&1 &
+    python3 "$UPDATER_SCRIPT" >/dev/null 2>&1 &
 }
 
 if [ -f "$CACHE_FILE" ]; then

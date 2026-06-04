@@ -1,106 +1,113 @@
-# Arch Linux - Hyprland Dotfiles
+# Arch / CachyOS / EndeavourOS Hyprland Dotfiles
 
-Tek komutla tam Arch Linux / CachyOS masaustu kurulumu. [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots) temel alinarak ozellestirilmistir.
+Mevcut Arch tabanlı bir sistem üzerine tek komutla tam masaüstü kurulumu yapar. Tüm yapılandırma dosyaları doğrudan `config/` altından yönetilir.
+
+> **Uyarı:** Bu script bir işletim sistemi kurmaz. Daha önce kurulmuş Arch tabanlı bir sistem üzerinde çalıştırılmalıdır.
+
+Kurulum, [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots) reposundan ilham alınarak özelleştirilmiştir.
 
 ## Kurulum
 
-Minimal Arch Linux kurulumundan sonra:
+Minimal Arch / CachyOS / EndeavourOS kurulumundan sonra normal kullanıcı ile çalıştırın:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
 ```
 
-> **Root olarak calistirmayin!** Normal kullanici ile calistirin.
+> **Root olarak çalıştırmayın!** Script kendi içinde `sudo` kullanarak gerekli sistemsel işlemleri yapar.
 
-## Ozellikler
+> **Yedekleme:** Mevcut `~/.config` içeriği otomatik olarak `~/.config-backup-<zaman_damgasi>` altına yedeklenir.
 
-- **Otomatik donanim algilama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
-- **VM destegi** - Sanal makinelerde software rendering otomatik aktif
-- **Quickshell widget'lari** - Saat, takvim, hava durumu, muzik, bluetooth, ses, wallpaper secici
+## Özellikler
+
+- **Otomatik donanım algılama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
+- **VM desteği** - Sanal makinelerde software rendering otomatik aktif
+- **Quickshell widget'ları** - Saat, takvim, hava durumu, müzik, bluetooth, ses, wallpaper seçici
+- **macOS/Mojave tarzı dock** - `nwg-dock-hyprland` ile altta ortalı, auto-hide dock
 - **SDDM** - Wayland display manager otomatik kurulum
 - **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
-- **Turkce Q klavye** - Varsayilan olarak ayarli
+- **Türkçe Q klavye** - Varsayılan olarak ayarlı
 
 ## Dahil Olan Uygulamalar
 
 | Kategori | Uygulamalar |
 |----------|-------------|
 | Terminal | Kitty, Zsh + Oh My Zsh |
-| Tarayici | Firefox, Google Chrome |
-| Editorler | Neovim, VS Code |
-| Iletisim | Telegram |
+| Tarayıcı | Firefox, Google Chrome |
+| Editörler | Neovim, VS Code |
+| İletişim | Telegram |
 | Notlar | Obsidian, Notion |
 | Medya | OBS Studio, MPV, Spotify, Cava |
 | Ofis | LibreOffice |
-| Gelistirici | Docker, Lazygit, IntelliJ IDEA, Codex |
-| Sanallastirma | KVM/QEMU (virt-manager) |
-| Ag Araclari | Wireshark, Nmap, Traceroute, MTR, Bandwhich |
-| CLI Araclari | btop, bat, zoxide, duf, ncdu, fzf, ripgrep |
+| Geliştirici | Docker, Lazygit, IntelliJ IDEA, Codex |
+| Sanallaştırma | KVM/QEMU (virt-manager) |
+| Ağ Araçları | Wireshark, Nmap, Traceroute, MTR, Bandwhich |
+| CLI Araçları | btop, bat, zoxide, duf, ncdu, fzf, ripgrep |
 | Sistem | Timeshift, Flatpak, Bottles |
 
-## Klavye Kisayollari
+## Klavye Kısayolları
 
-### Uygulama Acma
+### Uygulama Açma
 
-| Kisayol | Islev |
+| Kısayol | İşlev |
 |---------|-------|
 | `Super + Enter` | Kitty terminal |
 | `Super + F` | Firefox |
-| `Super + E` | Nautilus (dosya yoneticisi) |
-| `Super + D` | Rofi uygulama baslatici |
-| `Super + C` | Pano gecmisi (clipboard) |
+| `Super + E` | Nautilus (dosya yöneticisi) |
+| `Super + D` | Rofi uygulama başlatıcı |
+| `Super + C` | Pano geçmişi (clipboard) |
 | `Super + A` | Bildirim merkezi (swaync) |
-| `Alt + Tab` | Pencere degistirici |
+| `Alt + Tab` | Pencere değiştirici |
 
-### Quickshell Widget'lari
+### Quickshell Widget'ları
 
-| Kisayol | Widget |
+| Kısayol | Widget |
 |---------|--------|
 | `Super + S` | Takvim / Saat / Hava durumu |
-| `Super + Q` | Muzik oynatici + Equalizer |
-| `Super + W` | Wallpaper secici |
-| `Super + V` | Ses kontrolu |
-| `Super + N` | Ag / Wi-Fi / Bluetooth |
-| `Super + B` | Batarya / Sistem monitor |
-| `Super + H` | Kilavuz (Guide) |
-| `Super + M` | Monitor ayarlari |
+| `Super + Q` | Müzik oynatıcı + Equalizer |
+| `Super + W` | Wallpaper seçici |
+| `Super + V` | Ses kontrolü |
+| `Super + N` | Ağ / Wi-Fi / Bluetooth |
+| `Super + B` | Batarya / Sistem monitör |
+| `Super + H` | Kılavuz (Guide) |
+| `Super + M` | Monitör ayarları |
 | `Super + Shift + S` | Stewart (AI asistan) |
-| `Super + Shift + T` | Focus Time (odak zamanlayici) |
+| `Super + Shift + T` | Focus Time (odak zamanlayıcı) |
 
-### Pencere Yonetimi
+### Pencere Yönetimi
 
-| Kisayol | Islev |
+| Kısayol | İşlev |
 |---------|-------|
 | `Alt + F4` | Pencereyi kapat |
-| `Super + Shift + F` | Float/Tile gecisi |
-| `Super + Yon tuslari` | Pencere odagini degistir |
-| `Super + Ctrl + Yon tuslari` | Pencereyi tasi |
-| `Super + Shift + Yon tuslari` | Pencereyi boyutlandir |
-| `Super + Sol tik surukle` | Pencereyi tasi (fare) |
-| `Super + Sag tik surukle` | Pencereyi boyutlandir (fare) |
+| `Super + Shift + F` | Float/Tile geçişi |
+| `Super + Yön tuşları` | Pencere odağını değiştir |
+| `Super + Ctrl + Yön tuşları` | Pencereyi taşı |
+| `Super + Shift + Yön tuşları` | Pencereyi boyutlandır |
+| `Super + Sol tık sürükle` | Pencereyi taşı (fare) |
+| `Super + Sağ tık sürükle` | Pencereyi boyutlandır (fare) |
 
 ### Workspace
 
-| Kisayol | Islev |
+| Kısayol | İşlev |
 |---------|-------|
 | `Super + 1-0` | Workspace 1-10'a git |
-| `Super + Shift + 1-0` | Pencereyi workspace'e tasi |
-| 3 parmak yatay kaydirma | Workspace degistir |
+| `Super + Shift + 1-0` | Pencereyi workspace'e taşı |
+| 3 parmak yatay kaydırma | Workspace değiştir |
 
 ### Medya & Sistem
 
-| Kisayol | Islev |
+| Kısayol | İşlev |
 |---------|-------|
-| `Super + Space` | Muzik oynat/duraklat |
-| `Super + L` | Ekrani kilitle |
-| `Print` | Ekran goruntusu (alan secimi) |
-| `Super + Print` | Tam ekran goruntusu |
-| `Shift + Print` | Ekran goruntusu + duzenle |
-| `Caps Lock` | Caps Lock OSD gostergesi |
-| Ses tuslari | Ses ac/kapa/kis |
-| Parlaklik tuslari | Parlaklik ayari |
+| `Super + Space` | Müzik oynat/duraklat |
+| `Super + L` | Ekranı kilitle |
+| `Print` | Ekran görüntüsü (alan seçimi) |
+| `Super + Print` | Tam ekran görüntüsü |
+| `Shift + Print` | Ekran görüntüsü + düzenle |
+| `Caps Lock` | Caps Lock OSD göstergesi |
+| Ses tuşları | Ses aç/kapa/kıs |
+| Parlaklık tuşları | Parlaklık ayarı |
 
-## Ekran Goruntuleri
+## Ekran Görüntüleri
 
 ![preview1](previews/screenshot1.png)
 ![preview2](previews/screenshot2.png)
@@ -113,11 +120,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 ![preview9](previews/screenshot9.png)
 ![preview3](previews/screenshot3.png)
 
-## Wallpaper'lar
-
-Tum wallpaper'lar: **[ilyamiro/shell-wallpapers](https://github.com/ilyamiro/shell-wallpapers)**
-
 ## Krediler
 
-- Orijinal dotfiles: [ilyamiro](https://github.com/ilyamiro/imperative-dots)
-- Fork ve ozellestirme: [ozkanaltunboga](https://github.com/ozkanaltunboga)
+- Orijinal dotfiles: [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots)
+- Fork ve özelleştirme: [ozkanaltunboga](https://github.com/ozkanaltunboga)

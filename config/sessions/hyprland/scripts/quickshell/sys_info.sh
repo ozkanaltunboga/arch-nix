@@ -156,8 +156,22 @@ get_battery_icon() {
 ## SYSTEM
 get_kb_layout() {
     local layout=$(timeout 1 hyprctl devices -j 2>/dev/null | jq -r '.keyboards[]? | select(.main == true) | .active_keymap' | head -n1)
-    [[ -z "$layout" || "$layout" == "null" ]] && layout="US"
-    echo "$layout" | cut -c1-2 | tr '[:lower:]' '[:upper:]'
+    [[ -z "$layout" || "$layout" == "null" ]] && layout="us"
+
+    case "${layout,,}" in
+        tr|trq|turkish*|turkce*)
+            echo "TRQ"
+            ;;
+        us|english*us*)
+            echo "US"
+            ;;
+        ru|russian*)
+            echo "RU"
+            ;;
+        *)
+            echo "$layout" | cut -c1-3 | tr '[:lower:]' '[:upper:]'
+            ;;
+    esac
 }
 
 ## EXECUTION

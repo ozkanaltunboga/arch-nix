@@ -1160,7 +1160,7 @@ Item {
                             
                             let fullCommand = "hyprctl --batch '" + batchCmds.join(" ; ") + "'";
                             
-                            let postReloadCmd = "swww kill ; sleep 0.2 ; swww-daemon &";
+                            let postReloadCmd = "pkill -x awww-daemon 2>/dev/null || true; sleep 0.2; awww-daemon &";
                             
                             Quickshell.execDetached(["sh", "-c", fullCommand + " ; " + postReloadCmd]);
                             Quickshell.execDetached(["notify-send", "Display Update", "Applied layout for: " + summaryString]);
