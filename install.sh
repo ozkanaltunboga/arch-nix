@@ -21,6 +21,9 @@ sudo -v || error "sudo yetkisi alınamadı"
 SUDO_KEEPALIVE_PID=$!
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null' EXIT
 
+# Minimal kurulumlarda donanım algılama araçları eksik olabilir.
+sudo pacman -S --needed --noconfirm pciutils iw
+
 # ============================================================
 # 0. DONANIM ALGILAMA
 # ============================================================
@@ -28,16 +31,31 @@ step "Donanım algılanıyor"
 
 GPU_RAW=$(lspci -nn 2>/dev/null | grep -iE 'vga|3d|display' || true)
 IS_VM=false
+VM_TYPE="$(systemd-detect-virt --vm 2>/dev/null || true)"
 IS_NVIDIA=false
 IS_AMD=false
 IS_INTEL=false
 HAS_BATTERY=false
 HAS_WIFI=false
 
-if echo "$GPU_RAW" | grep -qi "vmware\|virtualbox\|qxl\|virtio\|bochs\|hyper-v\|parallels"; then
+if [[ -n "$VM_TYPE" && "$VM_TYPE" != "none" ]]; then
     IS_VM=true
-    info "Sanal makine algılandı (VM GPU fix'leri uygulanacak)"
-elif echo "$GPU_RAW" | grep -qi "nvidia"; then
+    info "Sanal makine algılandı: $VM_TYPE (VM fix'leri uygulanacak)"
+elif echo "$GPU_RAW" | grep -qi "vmware\|virtualbox\|qxl\|virtio\|bochs\|hyper-v\|parallels"; then
+    IS_VM=true
+    if echo "$GPU_RAW" | grep -qi "vmware"; then
+        VM_TYPE="vmware"
+    elif echo "$GPU_RAW" | grep -qi "virtualbox"; then
+        VM_TYPE="oracle"
+    elif echo "$GPU_RAW" | grep -qi "qxl\|virtio\|bochs"; then
+        VM_TYPE="qemu"
+    else
+        VM_TYPE="generic"
+    fi
+    info "Sanal makine algılandı (VM fix'leri uygulanacak)"
+fi
+
+if echo "$GPU_RAW" | grep -qi "nvidia"; then
     IS_NVIDIA=true
     info "NVIDIA GPU algılandı"
 elif echo "$GPU_RAW" | grep -qi "amd\|radeon"; then
@@ -99,7 +117,7 @@ fi
 # ============================================================
 PACMAN_PKGS=(
     # Temel araçlar
-    wget file git psmisc btop fzf direnv ffmpeg bc tree jq socat unzip
+    wget file git psmisc btop fzf direnv ffmpeg bc tree jq socat unzip pciutils
 
     # Python
     python python-pip python-websockets python-selenium geckodriver
@@ -185,6 +203,20 @@ if [[ "$IS_INTEL" == true ]]; then
 fi
 if [[ "$IS_VM" == true ]]; then
     PACMAN_PKGS+=(mesa)
+    case "$VM_TYPE" in
+        vmware)
+            PACMAN_PKGS+=(open-vm-tools gtkmm3)
+            ;;
+        oracle|virtualbox)
+            PACMAN_PKGS+=(virtualbox-guest-utils)
+            ;;
+        qemu|kvm|bochs)
+            PACMAN_PKGS+=(qemu-guest-agent spice-vdagent)
+            ;;
+        *)
+            PACMAN_PKGS+=(open-vm-tools gtkmm3 qemu-guest-agent spice-vdagent)
+            ;;
+    esac
 fi
 
 # Steam sadece gerçek donanımda
@@ -309,15 +341,28 @@ if [ -n "$FIREFOX_PROFILE_DIR" ]; then
     fi
 fi
 
-# --- Wallpaper indir ---
-step "Wallpaper'lar indiriliyor"
+# --- Wallpaper kurulumu ---
+step "Wallpaper'lar kuruluyor"
 WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
+REPO_WALLPAPER_DIR="$REPO_DIR/config/wallpapers"
 mkdir -p "$WALLPAPER_DIR"
 
-if [ "$(ls -A "$WALLPAPER_DIR" 2>/dev/null | grep -iE '\.(jpg|png|jpeg|webp)$')" ]; then
-    info "Wallpaper'lar zaten mevcut, atlanıyor"
+if [ -d "$REPO_WALLPAPER_DIR" ]; then
+    copied_wallpapers=0
+    while IFS= read -r -d '' wallpaper; do
+        target_wallpaper="$WALLPAPER_DIR/$(basename "$wallpaper")"
+        if [ ! -e "$target_wallpaper" ]; then
+            cp "$wallpaper" "$target_wallpaper"
+            copied_wallpapers=$((copied_wallpapers + 1))
+        fi
+    done < <(find "$REPO_WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) -print0)
+    info "Repo wallpaper'ları hazırlandı: $WALLPAPER_DIR ($copied_wallpapers yeni dosya)"
 else
-    warn "Wallpaper'lar bulunamadı. Lütfen kendi wallpaper'larınızı $WALLPAPER_DIR altına yerleştirin."
+    warn "Repo wallpaper klasörü bulunamadı: $REPO_WALLPAPER_DIR"
+fi
+
+if ! find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) | grep -q .; then
+    warn "Wallpaper bulunamadı. Lütfen kendi wallpaper'larınızı $WALLPAPER_DIR altına yerleştirin."
 fi
 
 # ============================================================
@@ -453,6 +498,31 @@ sudo systemctl enable --now libvirtd
 sudo systemctl enable --now docker
 sudo virsh net-autostart default 2>/dev/null || true
 sudo virsh net-start default 2>/dev/null || true
+
+# VM guest araçları
+if [[ "$IS_VM" == true ]]; then
+    case "$VM_TYPE" in
+        vmware)
+            sudo systemctl enable --now vmtoolsd.service 2>/dev/null || true
+            sudo systemctl enable --now vmware-vmblock-fuse.service 2>/dev/null || true
+            ;;
+        oracle|virtualbox)
+            sudo systemctl enable --now vboxservice.service 2>/dev/null || true
+            ;;
+        qemu|kvm|bochs)
+            sudo systemctl enable --now qemu-guest-agent.service 2>/dev/null || true
+            sudo systemctl enable --now spice-vdagentd.service 2>/dev/null || true
+            ;;
+        *)
+            sudo systemctl enable --now vmtoolsd.service 2>/dev/null || true
+            sudo systemctl enable --now vmware-vmblock-fuse.service 2>/dev/null || true
+            sudo systemctl enable --now qemu-guest-agent.service 2>/dev/null || true
+            sudo systemctl enable --now spice-vdagentd.service 2>/dev/null || true
+            sudo systemctl enable --now vboxservice.service 2>/dev/null || true
+            ;;
+    esac
+    info "VM guest araçları yapılandırıldı: $VM_TYPE"
+fi
 
 # Pipewire (global - TTY'den çalışsa bile)
 sudo systemctl --global enable pipewire wireplumber pipewire-pulse 2>/dev/null || true

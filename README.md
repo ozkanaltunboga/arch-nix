@@ -23,6 +23,8 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 - **Otomatik donanım algılama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
 - **VM desteği** - Sanal makinelerde software rendering otomatik aktif
 - **Quickshell widget'ları** - Saat, takvim, hava durumu, müzik, bluetooth, ses, wallpaper seçici
+- **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
+- **VM guest tools** - VMware, VirtualBox ve QEMU/SPICE guest araçları VM tipine göre kurulur
 - **macOS/Mojave tarzı dock** - `nwg-dock-hyprland` ile altta ortalı, auto-hide dock
 - **SDDM** - Wayland display manager otomatik kurulum
 - **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
