@@ -465,7 +465,7 @@ mkdir -p "$SYSTEMD_USER_DIR"
 cat <<EOF > "$SYSTEMD_USER_DIR/swayosd.service"
 [Unit]
 Description=SwayOSD Service
-PartBy=graphical-session.target
+PartOf=graphical-session.target
 After=graphical-session.target
 ConditionEnvironment=WAYLAND_DISPLAY
 
