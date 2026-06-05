@@ -93,9 +93,10 @@ elif command -v yay &>/dev/null; then
     AUR_CMD="yay -S --needed --noconfirm"
 else
     info "paru kuruluyor..."
-    sudo pacman -S --needed --noconfirm git base-devel
+    sudo pacman -S --needed --noconfirm git base-devel cargo
     local_tmp=$(mktemp -d)
     git clone https://aur.archlinux.org/paru.git "$local_tmp/paru"
+    sudo -v
     (cd "$local_tmp/paru" && makepkg -si --noconfirm)
     rm -rf "$local_tmp"
     AUR_CMD="paru -S --needed --noconfirm"
