@@ -5,3 +5,10 @@
 
 commit.txt
 config/programs/eww/hotfile-eww/*
+
+.config/
+tmp/
+__pycache__/
+*.pyc
+*.log
+.cache/

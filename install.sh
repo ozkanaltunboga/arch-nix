@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
 #   Arch Linux / CachyOS - Tek Komutla Tam Kurulum
-#   https://github.com/ozkanaltunboga/arch-nix
-#
-#   Kullanım:
-#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
 # ============================================================
 set -e
 
@@ -106,7 +102,7 @@ PACMAN_PKGS=(
     wget file git psmisc btop fzf direnv ffmpeg bc tree jq socat unzip
 
     # Python
-    python python-pip python-websockets
+    python python-pip python-websockets python-selenium geckodriver
 
     # Editör & terminal
     neovim kitty
@@ -130,6 +126,10 @@ PACMAN_PKGS=(
     wl-clipboard cliphist rofi-wayland pavucontrol nautilus
     alsa-utils pamixer brightnessctl acpi iw
     gtk3 cava inotify-tools
+
+    # Dock & ikon temaları
+    nwg-dock-hyprland papirus-icon-theme hicolor-icon-theme adwaita-icon-theme
+    desktop-file-utils
 
     # Qt5/Qt6 (SDDM + Quickshell)
     qt5-wayland qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
@@ -246,7 +246,7 @@ CLONE_DIR="$HOME/.hyprland-dots"
 TARGET_CONFIG="$HOME/.config"
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d_%H%M%S)"
 
-if [ -f "$(pwd)/install.sh" ] && [ -d "$(pwd)/.config" ]; then
+if [ -f "$(pwd)/install.sh" ] && [ -d "$(pwd)/config" ]; then
     REPO_DIR="$(pwd)"
     info "Yerel repodan çalışılıyor: $REPO_DIR"
 else
@@ -259,26 +259,55 @@ else
     REPO_DIR="$CLONE_DIR"
 fi
 
-# --- Config dosyalarını deploy et ---
+# --- Config dosyalarını deploy et (copy + timestamp backup) ---
 step "Config dosyaları yerleştiriliyor"
 
-CONFIG_FOLDERS=("cava" "hypr" "kitty" "rofi" "swaync" "matugen" "zsh" "swayosd" "nvim")
 mkdir -p "$TARGET_CONFIG" "$BACKUP_DIR"
 
-for folder in "${CONFIG_FOLDERS[@]}"; do
-    SOURCE_PATH="$REPO_DIR/.config/$folder"
-    TARGET_PATH="$TARGET_CONFIG/$folder"
-
-    if [ -d "$SOURCE_PATH" ]; then
-        # Mevcut config'i yedekle
-        if [ -e "$TARGET_PATH" ]; then
-            mv "$TARGET_PATH" "$BACKUP_DIR/$folder"
-            info "Yedeklendi: $folder -> $BACKUP_DIR/$folder"
-        fi
-        cp -r "$SOURCE_PATH" "$TARGET_PATH"
-        info "Kopyalandı: $folder"
+deploy() {
+    local src="$1"
+    local dst="$2"
+    if [ ! -e "$src" ]; then
+        warn "Kaynak bulunamadı, atlanıyor: $src"
+        return 0
     fi
-done
+    if [ -e "$dst" ]; then
+        mv "$dst" "$BACKUP_DIR/$(basename "$dst")-$(date +%s)"
+        info "Yedeklendi: $dst"
+    fi
+    mkdir -p "$(dirname "$dst")"
+    cp -r "$src" "$dst"
+    info "Kopyalandı: $dst"
+}
+
+# Mappings from config/ -> ~/.config
+deploy "$REPO_DIR/config/programs/kitty"      "$TARGET_CONFIG/kitty"
+deploy "$REPO_DIR/config/programs/rofi"       "$TARGET_CONFIG/rofi"
+deploy "$REPO_DIR/config/programs/matugen"    "$TARGET_CONFIG/matugen"
+deploy "$REPO_DIR/config/programs/swaync"     "$TARGET_CONFIG/swaync"
+deploy "$REPO_DIR/config/programs/swayosd"    "$TARGET_CONFIG/swayosd"
+deploy "$REPO_DIR/config/programs/nwg-dock-hyprland" "$TARGET_CONFIG/nwg-dock-hyprland"
+chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/launch.sh" 2>/dev/null || true
+deploy "$REPO_DIR/config/programs/neovim/nvim" "$TARGET_CONFIG/nvim"
+deploy "$REPO_DIR/config/sessions/hyprland"    "$TARGET_CONFIG/hypr"
+
+# Cava: config_base
+deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
+
+# Zsh
+deploy "$REPO_DIR/config/programs/zsh" "$TARGET_CONFIG/zsh"
+deploy "$REPO_DIR/config/programs/zsh/.zshrc" "$HOME/.zshrc"
+
+# Firefox chrome (fallback to ~/.config/firefox-chrome if profile not found)
+FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1)"
+deploy "$REPO_DIR/config/programs/firefox/chrome" "$TARGET_CONFIG/firefox-chrome"
+if [ -n "$FIREFOX_PROFILE_DIR" ]; then
+    deploy "$REPO_DIR/config/programs/firefox/chrome" "$FIREFOX_PROFILE_DIR/chrome"
+    # Sync matugen outputs to profile as well
+    if [ -d "$TARGET_CONFIG/firefox-chrome" ]; then
+        cp -r "$TARGET_CONFIG/firefox-chrome/." "$FIREFOX_PROFILE_DIR/chrome/" 2>/dev/null || true
+    fi
+fi
 
 # --- Wallpaper indir ---
 step "Wallpaper'lar indiriliyor"
@@ -288,18 +317,7 @@ mkdir -p "$WALLPAPER_DIR"
 if [ "$(ls -A "$WALLPAPER_DIR" 2>/dev/null | grep -iE '\.(jpg|png|jpeg|webp)$')" ]; then
     info "Wallpaper'lar zaten mevcut, atlanıyor"
 else
-    WALLPAPER_REPO="https://github.com/ilyamiro/shell-wallpapers.git"
-    WALLPAPER_TMP="/tmp/shell-wallpapers"
-    rm -rf "$WALLPAPER_TMP"
-    info "Wallpaper'lar indiriliyor..."
-    git clone --depth 1 "$WALLPAPER_REPO" "$WALLPAPER_TMP" 2>/dev/null
-    if [ -d "$WALLPAPER_TMP/images" ]; then
-        cp -r "$WALLPAPER_TMP/images/"* "$WALLPAPER_DIR/" 2>/dev/null || true
-    else
-        cp -r "$WALLPAPER_TMP/"*.{jpg,png,jpeg,webp} "$WALLPAPER_DIR/" 2>/dev/null || true
-    fi
-    rm -rf "$WALLPAPER_TMP"
-    info "Wallpaper'lar indirildi: $WALLPAPER_DIR"
+    warn "Wallpaper'lar bulunamadı. Lütfen kendi wallpaper'larınızı $WALLPAPER_DIR altına yerleştirin."
 fi
 
 # ============================================================
@@ -315,19 +333,14 @@ if [ -f "$HYPR_CONF" ]; then
     info "Klavye düzeni: Türkçe Q"
 
     # --- Environment Variables ---
-    # Mevcut env satırlarını temizle (duplikasyon önleme)
-    sed -i '/^env = WALLPAPER_DIR,/d' "$HYPR_CONF"
+    sed -i "s|^env = WALLPAPER_DIR,.*|env = WALLPAPER_DIR,$WALLPAPER_DIR|" "$HYPR_CONF"
     sed -i '/^env = SCRIPT_DIR,/d' "$HYPR_CONF"
-    sed -i '/^env = QML_XHR_ALLOW_FILE_READ,/d' "$HYPR_CONF"
     sed -i '/^env = QT_QUICK_BACKEND,/d' "$HYPR_CONF"
-
-    # Temel env'ler ekle
-    sed -i "/^env = NIXOS_OZONE_WL,1/a env = WALLPAPER_DIR,$WALLPAPER_DIR\nenv = SCRIPT_DIR,$HOME/.config/hypr/scripts\nenv = QML_XHR_ALLOW_FILE_READ,1" "$HYPR_CONF"
-    info "Ortam değişkenleri eklendi"
+    info "Ortam değişkenleri güncellendi"
 
     # --- VM GPU Fix ---
     if [[ "$IS_VM" == true ]]; then
-        sed -i "/^env = QML_XHR_ALLOW_FILE_READ,1/a env = QT_QUICK_BACKEND,software" "$HYPR_CONF"
+        sed -i '/^env = QML_XHR_ALLOW_FILE_READ,1/a env = QT_QUICK_BACKEND,software' "$HYPR_CONF"
         # Kitty software rendering
         sed -i 's|^\$terminal = kitty|$terminal = env LIBGL_ALWAYS_SOFTWARE=1 kitty|' "$HYPR_CONF"
         sed -i 's|^\$terminal = env LIBGL_ALWAYS_SOFTWARE=1 env LIBGL_ALWAYS_SOFTWARE=1|$terminal = env LIBGL_ALWAYS_SOFTWARE=1|' "$HYPR_CONF"
@@ -336,34 +349,21 @@ if [ -f "$HYPR_CONF" ]; then
 
     # --- NVIDIA env'leri ---
     if [[ "$IS_NVIDIA" == true ]]; then
-        sed -i '/^env = NIXOS_OZONE_WL,1/a env = LIBVA_DRIVER_NAME,nvidia\nenv = XDG_SESSION_TYPE,wayland\nenv = GBM_BACKEND,nvidia-drm\nenv = __GLX_VENDOR_LIBRARY_NAME,nvidia\nenv = WLR_NO_HARDWARE_CURSORS,1' "$HYPR_CONF"
+        sed -i '/^env = WALLPAPER_DIR,/a env = LIBVA_DRIVER_NAME,nvidia\nenv = XDG_SESSION_TYPE,wayland\nenv = GBM_BACKEND,nvidia-drm\nenv = __GLX_VENDOR_LIBRARY_NAME,nvidia\nenv = WLR_NO_HARDWARE_CURSORS,1' "$HYPR_CONF"
         info "NVIDIA Wayland env'leri eklendi"
     fi
 fi
 
-# --- Quickshell requestActivate fix ---
-MAIN_QML="$TARGET_CONFIG/hypr/scripts/quickshell/Main.qml"
-if [ -f "$MAIN_QML" ]; then
-    sed -i 's|if (isVisible) masterWindow.requestActivate();|if (isVisible \&\& typeof masterWindow.requestActivate === "function") masterWindow.requestActivate();|' "$MAIN_QML"
-    info "Quickshell requestActivate fix uygulandı"
-fi
-
-# --- swww -> awww patch ---
-if [ -d "$TARGET_CONFIG/hypr/scripts" ]; then
-    find "$TARGET_CONFIG/hypr/scripts" -type f -exec sed -i 's/swww/awww/g' {} +
-    info "swww -> awww patch uygulandı"
-fi
-
 # --- Desktop/Laptop adaptasyonu ---
 QS_BAT_DIR="$TARGET_CONFIG/hypr/scripts/quickshell/battery"
-REPO_BAT_DIR="$REPO_DIR/.config/hypr/scripts/quickshell/battery"
+REPO_BAT_DIR="$REPO_DIR/config/sessions/hyprland/scripts/quickshell/battery"
 if [[ "$HAS_BATTERY" == false ]] && [ -f "$REPO_BAT_DIR/BatteryPopupAlt.qml" ]; then
     cp -f "$REPO_BAT_DIR/BatteryPopupAlt.qml" "$QS_BAT_DIR/BatteryPopup.qml" 2>/dev/null || true
     info "Masaüstü: Batarya widget'ı -> Sistem Monitör widget'ına dönüştürüldü"
 fi
 
 QS_NET_DIR="$TARGET_CONFIG/hypr/scripts/quickshell/network"
-REPO_NET_DIR="$REPO_DIR/.config/hypr/scripts/quickshell/network"
+REPO_NET_DIR="$REPO_DIR/config/sessions/hyprland/scripts/quickshell/network"
 if [[ "$HAS_WIFI" == false ]] && [ -f "$REPO_NET_DIR/NetworkPopupAlt.qml" ]; then
     cp -f "$REPO_NET_DIR/NetworkPopupAlt.qml" "$QS_NET_DIR/NetworkPopup.qml" 2>/dev/null || true
     info "Masaüstü/VM: Wi-Fi widget'ı -> Ethernet widget'ına dönüştürüldü"
@@ -375,7 +375,7 @@ fi
 step "Fontlar kuruluyor"
 
 TARGET_FONTS="$HOME/.local/share/fonts"
-REPO_FONTS="$REPO_DIR/.local/share/fonts"
+REPO_FONTS="$REPO_DIR/config/fonts"
 mkdir -p "$TARGET_FONTS"
 
 # Repo'daki fontları kopyala
@@ -421,21 +421,14 @@ ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]] && \
     git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 
-# .zshrc deploy
+# .zshrc alias restore
 ZSH_RC="$HOME/.zshrc"
-if [ -f "$TARGET_CONFIG/zsh/.zshrc" ]; then
-    # Mevcut alias'ları yedekle
-    if [ -f "$ZSH_RC" ]; then
-        mkdir -p "$TARGET_CONFIG/zsh"
-        grep "^alias " "$ZSH_RC" > "$TARGET_CONFIG/zsh/user_aliases.zsh" 2>/dev/null || true
-    fi
-    cp "$TARGET_CONFIG/zsh/.zshrc" "$ZSH_RC"
-    # Dinamik path'ler ekle
-    echo -e "\n# Dynamic System Paths" >> "$ZSH_RC"
-    echo "export WALLPAPER_DIR=\"$WALLPAPER_DIR\"" >> "$ZSH_RC"
-    echo "export SCRIPT_DIR=\"$HOME/.config/hypr/scripts\"" >> "$ZSH_RC"
-    # Eski alias'ları geri yükle
-    if [ -s "$TARGET_CONFIG/zsh/user_aliases.zsh" ]; then
+if [ -f "$ZSH_RC" ]; then
+    mkdir -p "$TARGET_CONFIG/zsh"
+    grep "^alias " "$ZSH_RC" > "$TARGET_CONFIG/zsh/user_aliases.zsh" 2>/dev/null || true
+fi
+if [ -s "$TARGET_CONFIG/zsh/user_aliases.zsh" ]; then
+    if ! grep -q "source $TARGET_CONFIG/zsh/user_aliases.zsh" "$ZSH_RC" 2>/dev/null; then
         echo -e "\n# User Aliases" >> "$ZSH_RC"
         echo "source $TARGET_CONFIG/zsh/user_aliases.zsh" >> "$ZSH_RC"
     fi
@@ -514,9 +507,9 @@ GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
 
 # SDDM tema (repo'da varsa)
-if [ -d "$REPO_DIR/.config/sddm/themes/matugen-minimal" ]; then
+if [ -d "$REPO_DIR/config/programs/sddm/themes/matugen-minimal" ]; then
     sudo mkdir -p /usr/share/sddm/themes/matugen-minimal
-    sudo cp -r "$REPO_DIR/.config/sddm/themes/matugen-minimal/"* /usr/share/sddm/themes/matugen-minimal/
+    sudo cp -r "$REPO_DIR/config/programs/sddm/themes/matugen-minimal/"* /usr/share/sddm/themes/matugen-minimal/
 
     # Fallback Colors.qml
     cat <<'QMLEOF' | sudo tee /usr/share/sddm/themes/matugen-minimal/Colors.qml > /dev/null

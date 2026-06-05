@@ -6,7 +6,7 @@
 QS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BT_PID_FILE="$HOME/.cache/bt_scan_pid"
 BT_SCAN_LOG="$HOME/.cache/bt_scan.log"
-SRC_DIR="$HOME/Images/Wallpapers"
+SRC_DIR="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
 THUMB_DIR="$HOME/.cache/wallpaper_picker/thumbs"
 
 IPC_FILE="/tmp/qs_widget_state"
@@ -79,6 +79,11 @@ handle_wallpaper_prep() {
         CURRENT_SRC=$(basename "$CURRENT_SRC")
     fi
 
+    if [ -z "$CURRENT_SRC" ] && command -v awww >/dev/null; then
+        CURRENT_SRC=$(awww query 2>/dev/null | grep -o "$SRC_DIR/[^ ]*" | head -n1)
+        CURRENT_SRC=$(basename "$CURRENT_SRC")
+    fi
+
     if [ -z "$CURRENT_SRC" ] && command -v swww >/dev/null; then
         CURRENT_SRC=$(swww query 2>/dev/null | grep -o "$SRC_DIR/[^ ]*" | head -n1)
         CURRENT_SRC=$(basename "$CURRENT_SRC")
@@ -103,6 +108,57 @@ handle_network_prep() {
     (nmcli device wifi rescan) &
 }
 
+resolve_wayland_display() {
+    local runtime_dir="$1"
+    if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+        printf '%s\n' "$WAYLAND_DISPLAY"
+        return
+    fi
+
+    find "$runtime_dir" -maxdepth 1 -type s -name 'wayland-*' -printf '%f\n' 2>/dev/null | sort | head -n1
+}
+
+resolve_hyprland_signature() {
+    local runtime_dir="$1"
+    if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+        printf '%s\n' "$HYPRLAND_INSTANCE_SIGNATURE"
+        return
+    fi
+
+    find "$runtime_dir/hypr" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort | head -n1
+}
+
+launch_quickshell() {
+    local qml_path="$1"
+    local runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    local dbus_addr="${DBUS_SESSION_BUS_ADDRESS:-unix:path=${runtime_dir}/bus}"
+    local wayland_display
+    local hypr_signature
+    local -a launch_env
+
+    wayland_display="$(resolve_wayland_display "$runtime_dir")"
+    hypr_signature="$(resolve_hyprland_signature "$runtime_dir")"
+
+    launch_env=(
+        env
+        "XDG_RUNTIME_DIR=$runtime_dir"
+        "DBUS_SESSION_BUS_ADDRESS=$dbus_addr"
+        "QT_QPA_PLATFORM=wayland"
+    )
+
+    [[ -n "$wayland_display" ]] && launch_env+=("WAYLAND_DISPLAY=$wayland_display")
+    [[ -n "$hypr_signature" ]] && launch_env+=("HYPRLAND_INSTANCE_SIGNATURE=$hypr_signature")
+
+    if command -v systemd-detect-virt >/dev/null && [[ "$(systemd-detect-virt 2>/dev/null || true)" == "vmware" ]]; then
+        launch_env+=("QT_QUICK_BACKEND=${QT_QUICK_BACKEND:-software}")
+    elif [[ -n "${QT_QUICK_BACKEND:-}" ]]; then
+        launch_env+=("QT_QUICK_BACKEND=$QT_QUICK_BACKEND")
+    fi
+
+    "${launch_env[@]}" quickshell -p "$qml_path" >/dev/null 2>&1 &
+    disown
+}
+
 # -----------------------------------------------------------------------------
 # ZOMBIE WATCHDOG
 # -----------------------------------------------------------------------------
@@ -110,13 +166,11 @@ MAIN_QML_PATH="$HOME/.config/hypr/scripts/quickshell/Main.qml"
 BAR_QML_PATH="$HOME/.config/hypr/scripts/quickshell/TopBar.qml"
 
 if ! pgrep -f "quickshell.*Main\.qml" >/dev/null; then
-    quickshell -p "$MAIN_QML_PATH" >/dev/null 2>&1 &
-    disown
+    launch_quickshell "$MAIN_QML_PATH"
 fi
 
 if ! pgrep -f "quickshell.*TopBar\.qml" >/dev/null; then
-    quickshell -p "$BAR_QML_PATH" >/dev/null 2>&1 &
-    disown
+    launch_quickshell "$BAR_QML_PATH"
 fi
 
 # -----------------------------------------------------------------------------

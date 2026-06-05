@@ -14,7 +14,7 @@ from selenium.common.exceptions import TimeoutException
 # --- CONFIGURATION ---
 BASE_URL = "https://all.uddataplus.dk/skema/?id=id_menu_skema"
 RESOURCE_ID = "99217" 
-PROFILE_PATH = "/home/ilyamiro/.mozilla/firefox/schedule.special"
+PROFILE_PATH = os.path.expanduser("~/.mozilla/firefox/schedule.special")
 CACHE_FILE = os.path.expanduser("~/.cache/quickshell/schedule/schedule.json")
 
 # Time Configuration (24-hour format)

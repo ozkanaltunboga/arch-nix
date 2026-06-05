@@ -1,13 +1,12 @@
 [Plymouth Theme]
 Name=simple
-Description=NixOS boot animation, inspired by the Boot animation of macOS.
+Description=Arch boot animation, inspired by the Boot animation of macOS.
 ModuleName=two-step
 
 [two-step]
 Font=Cantarell 12
 TitleFont=Cantarell Light 30
-# NixOS path placeholder. This gets dynamically replaced during the Nix build process.
-ImageDir=@out@/share/plymouth/themes/simple/resources
+ImageDir=/usr/share/plymouth/themes/simple/resources
 DialogHorizontalAlignment=.5
 DialogVerticalAlignment=.5
 TitleHorizontalAlignment=.5

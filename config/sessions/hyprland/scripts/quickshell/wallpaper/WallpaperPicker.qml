@@ -119,14 +119,14 @@ Item {
                         cp "$DEST_FILE" /tmp/lock_bg.png || true
                         pkill mpvpaper || true
                         
-                        # Run matugen completely detached so it doesn't block swww execution
-                        ( matugen image "$FINAL_THUMB" || true; bash "$RELOAD_SCRIPT" || true ) &
+                        # Run matugen completely detached so it doesn't block awww execution
+                        ( matugen image "$FINAL_THUMB" --source-color-index 0 || true; bash "$RELOAD_SCRIPT" || true ) &
                         MATUGEN_PID=$!
                         
-                        # DETERMINISTIC LOOP: Force swww to succeed.
+                        # DETERMINISTIC LOOP: Force awww to succeed.
                         # It will poll every 50ms up to 20 times until the compositor accepts the frame.
                         for i in {1..20}; do
-                            if swww img "$DEST_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
+                            if awww img "$DEST_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
                                 break
                             fi
                             sleep 0.05
@@ -168,12 +168,12 @@ Item {
                             cp "$DEST_FILE" /tmp/lock_bg.png || true
                             pkill mpvpaper || true
                             
-                            ( matugen image "$FINAL_THUMB" || true; bash "$RELOAD_SCRIPT" || true ) &
+                            ( matugen image "$FINAL_THUMB" --source-color-index 0 || true; bash "$RELOAD_SCRIPT" || true ) &
                             MATUGEN_PID=$!
                             
                             # DETERMINISTIC LOOP
                             for i in {1..20}; do
-                                if swww img "$DEST_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
+                                if awww img "$DEST_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
                                     break
                                 fi
                                 sleep 0.05
@@ -206,7 +206,7 @@ Item {
             // Inject the deterministic loop directly into the standard command variable
             wallpaperCmd = `
                 for i in {1..20}; do
-                    if swww img "$WALL_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
+                    if awww img "$WALL_FILE" --transition-type ${randomTransition} --transition-pos 0.5,0.5 --transition-fps 144 --transition-duration 1 >/dev/null 2>&1; then
                         break
                     fi
                     sleep 0.05
@@ -226,7 +226,7 @@ Item {
                 ${lockBgCmd} || true
                 pkill mpvpaper || true
                 
-                ( matugen image "$THUMB_FILE" || true; bash "$RELOAD_SCRIPT" || true ) &
+                ( matugen image "$THUMB_FILE" --source-color-index 0 || true; bash "$RELOAD_SCRIPT" || true ) &
                 MATUGEN_PID=$!
                 
                 ${wallpaperCmd}
@@ -316,7 +316,7 @@ Item {
 
     function getCleanName(name) {
         if (!name) return "";
-        let clean = String(name);
+        let clean = String(name).replace(/['"]/g, ""); clean = clean.substring(clean.lastIndexOf('/') + 1);
         return clean.startsWith("000_") ? clean.substring(4) : clean;
     }
 
@@ -490,7 +490,7 @@ Item {
     readonly property string homeDir: "file://" + Quickshell.env("HOME")
     readonly property string thumbDir: homeDir + "/.cache/wallpaper_picker/thumbs"
     readonly property string searchDir: homeDir + "/.cache/wallpaper_picker/search_thumbs"
-    readonly property string srcDir: Quickshell.env("HOME") + "/Images/Wallpapers"
+    readonly property string srcDir: Quickshell.env("WALLPAPER_DIR")
 
     readonly property var transitions: ["grow", "outer", "any", "wipe", "wave", "pixel", "center"]
 

@@ -84,7 +84,7 @@ PanelWindow {
     // ---------------------------------------
 
     onIsVisibleChanged: {
-        if (isVisible) masterWindow.requestActivate();
+        if (isVisible && typeof masterWindow.requestActivate === "function") masterWindow.requestActivate();
     }
 
     // --- THE WIDGET CONTAINER ---
