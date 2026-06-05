@@ -142,7 +142,7 @@ PACMAN_PKGS=(
     # Wayland / Masaüstü
     hyprland xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     wl-clipboard cliphist rofi-wayland pavucontrol nautilus
-    alsa-utils pamixer brightnessctl acpi iw
+    alsa-utils pamixer brightnessctl acpi iw hyprlock
     gtk3 cava inotify-tools
 
     # Dock & ikon temaları
@@ -236,6 +236,8 @@ AUR_PKGS=(
     swayosd-git
     swaync
     eww
+    wlogout
+    sddm-sugar-candy-git
 
     # Fontlar
     ttf-udev-gothic
@@ -318,10 +320,13 @@ deploy "$REPO_DIR/config/programs/rofi"       "$TARGET_CONFIG/rofi"
 deploy "$REPO_DIR/config/programs/matugen"    "$TARGET_CONFIG/matugen"
 deploy "$REPO_DIR/config/programs/swaync"     "$TARGET_CONFIG/swaync"
 deploy "$REPO_DIR/config/programs/swayosd"    "$TARGET_CONFIG/swayosd"
+deploy "$REPO_DIR/config/programs/wlogout"    "$TARGET_CONFIG/wlogout"
 deploy "$REPO_DIR/config/programs/nwg-dock-hyprland" "$TARGET_CONFIG/nwg-dock-hyprland"
 chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/launch.sh" 2>/dev/null || true
 deploy "$REPO_DIR/config/programs/neovim/nvim" "$TARGET_CONFIG/nvim"
 deploy "$REPO_DIR/config/sessions/hyprland"    "$TARGET_CONFIG/hypr"
+chmod +x "$TARGET_CONFIG/hypr/scripts/lock.sh" 2>/dev/null || true
+chmod +x "$TARGET_CONFIG/hypr/scripts/lockscreen_prepare.sh" 2>/dev/null || true
 
 # Cava: config_base
 deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
@@ -576,8 +581,45 @@ DisplayServer=wayland
 GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
 
-# SDDM tema (repo'da varsa)
-if [ -d "$REPO_DIR/config/programs/sddm/themes/matugen-minimal" ]; then
+# Sugar Candy SDDM theme
+SUGAR_CANDY_DIR="/usr/share/sddm/themes/sugar-candy"
+if [ -d "$SUGAR_CANDY_DIR" ]; then
+    sudo mkdir -p "$SUGAR_CANDY_DIR/Backgrounds"
+    SDDM_BG_SRC="$WALLPAPER_DIR/default.jpg"
+    if [ ! -f "$SDDM_BG_SRC" ]; then
+        SDDM_BG_SRC="$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) 2>/dev/null | head -n 1 || true)"
+    fi
+    if [ -n "$SDDM_BG_SRC" ] && [ -f "$SDDM_BG_SRC" ]; then
+        sudo cp "$SDDM_BG_SRC" "$SUGAR_CANDY_DIR/Backgrounds/arch-nix-wallpaper.jpg"
+    fi
+    cat <<EOF | sudo tee "$SUGAR_CANDY_DIR/theme.conf.user" > /dev/null
+[General]
+Background="Backgrounds/arch-nix-wallpaper.jpg"
+DimBackgroundImage="0.25"
+ScreenWidth="1920"
+ScreenHeight="1080"
+FullBlur="true"
+PartialBlur="false"
+HaveFormBackground="false"
+ForceLastUser="true"
+ForcePasswordFocus="true"
+ForceHideCompletePassword="true"
+ForceHideVirtualKeyboardButton="true"
+HeaderText="Welcome"
+EOF
+    cat <<EOF | sudo tee /etc/sddm.conf.d/10-wayland.conf > /dev/null
+[Theme]
+Current=sugar-candy
+
+[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+EOF
+    info "SDDM Sugar Candy teması yapılandırıldı"
+fi
+
+# SDDM tema fallback'i (Sugar Candy yoksa repo temasını kullan)
+if [ ! -d "$SUGAR_CANDY_DIR" ] && [ -d "$REPO_DIR/config/programs/sddm/themes/matugen-minimal" ]; then
     sudo mkdir -p /usr/share/sddm/themes/matugen-minimal
     sudo cp -r "$REPO_DIR/config/programs/sddm/themes/matugen-minimal/"* /usr/share/sddm/themes/matugen-minimal/
 

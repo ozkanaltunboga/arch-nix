@@ -1,0 +1,50 @@
+* {
+    background-image: none;
+    box-shadow: none;
+    font-family: "JetBrains Mono", monospace;
+}
+
+window {
+    background-color: rgba(17, 17, 27, 0.72);
+}
+
+button {
+    min-width: 150px;
+    min-height: 150px;
+    margin: 12px;
+    border: 1px solid rgba(205, 214, 244, 0.18);
+    border-radius: 18px;
+    background-color: rgba(30, 30, 46, 0.78);
+    background-repeat: no-repeat;
+    background-position: center 36px;
+    color: #cdd6f4;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+button:focus,
+button:hover {
+    border-color: rgba(137, 180, 250, 0.85);
+    background-color: rgba(49, 50, 68, 0.92);
+    color: #ffffff;
+}
+
+#lock {
+    color: #cba6f7;
+}
+
+#suspend {
+    color: #89b4fa;
+}
+
+#logout {
+    color: #94e2d5;
+}
+
+#reboot {
+    color: #fab387;
+}
+
+#shutdown {
+    color: #f38ba8;
+}

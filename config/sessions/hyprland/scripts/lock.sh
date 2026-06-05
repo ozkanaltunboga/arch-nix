@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-quickshell -p ~/.config/hypr/scripts/quickshell/Lock.qml
-
+bash ~/.config/hypr/scripts/lockscreen_prepare.sh
+pidof hyprlock >/dev/null || hyprlock

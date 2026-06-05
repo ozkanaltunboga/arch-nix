@@ -26,6 +26,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 - **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
 - **VM guest tools** - VMware, VirtualBox ve QEMU/SPICE guest araçları VM tipine göre kurulur
 - **macOS/Mojave tarzı dock** - `nwg-dock-hyprland` ile altta ortalı, auto-hide dock
+- **Modern login/lock ekranı** - SDDM Sugar Candy, Hyprlock ve wlogout entegrasyonu
 - **SDDM** - Wayland display manager otomatik kurulum
 - **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
 - **Türkçe Q klavye** - Varsayılan olarak ayarlı
@@ -102,6 +103,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 |---------|-------|
 | `Super + Space` | Müzik oynat/duraklat |
 | `Super + L` | Ekranı kilitle |
+| `Super + Shift + L` | Güç / çıkış menüsü |
 | `Print` | Ekran görüntüsü (alan seçimi) |
 | `Super + Print` | Tam ekran görüntüsü |
 | `Shift + Print` | Ekran görüntüsü + düzenle |
