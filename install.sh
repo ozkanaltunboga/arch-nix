@@ -114,6 +114,31 @@ else
 fi
 
 # ============================================================
+# 2.1 PACMAN MIRROR & DOWNLOAD AYARLARI
+# ============================================================
+step "Pacman mirror ayarları yenileniyor"
+
+sudo cp /etc/pacman.d/mirrorlist "/etc/pacman.d/mirrorlist.backup-$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+MIRRORLIST_URL="https://archlinux.org/mirrorlist/?country=TR&country=DE&country=NL&country=FR&protocol=https&ip_version=4&use_mirror_status=on"
+if curl -fsSL "$MIRRORLIST_URL" | sed 's/^#Server/Server/' | sudo tee /etc/pacman.d/mirrorlist > /dev/null; then
+    info "Mirrorlist güncellendi (TR/DE/NL/FR HTTPS)"
+else
+    warn "Mirrorlist indirilemedi; mevcut mirrorlist kullanılacak"
+fi
+
+if grep -q '^#ParallelDownloads' /etc/pacman.conf; then
+    sudo sed -i 's/^#ParallelDownloads.*/ParallelDownloads = 8/' /etc/pacman.conf
+elif ! grep -q '^ParallelDownloads' /etc/pacman.conf; then
+    echo 'ParallelDownloads = 8' | sudo tee -a /etc/pacman.conf > /dev/null
+fi
+
+if ! grep -q '^DisableDownloadTimeout' /etc/pacman.conf; then
+    echo 'DisableDownloadTimeout' | sudo tee -a /etc/pacman.conf > /dev/null
+fi
+
+sudo pacman -Syy --noconfirm
+
+# ============================================================
 # 3. PAKET LİSTELERİ
 # ============================================================
 PACMAN_PKGS=(
