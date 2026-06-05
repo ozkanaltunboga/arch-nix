@@ -571,6 +571,12 @@ step "SDDM yapılandırılıyor"
 
 # SDDM'i etkinleştir (varsa diğer DM'leri devre dışı bırak)
 sudo systemctl disable gdm.service lightdm.service ly.service 2>/dev/null || true
+if ! systemctl list-unit-files sddm.service >/dev/null 2>&1; then
+    warn "sddm.service bulunamadı; SDDM paketi tekrar kuruluyor..."
+    sudo pacman -S --needed --noconfirm sddm
+    sudo systemctl daemon-reload
+fi
+systemctl list-unit-files sddm.service >/dev/null 2>&1 || error "sddm.service hâlâ bulunamadı. SDDM paketi kurulumu kontrol edilmeli."
 sudo systemctl enable sddm.service -f
 sudo systemctl set-default graphical.target
 info "SDDM etkinleştirildi"
