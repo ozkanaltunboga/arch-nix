@@ -572,6 +572,7 @@ step "SDDM yapılandırılıyor"
 # SDDM'i etkinleştir (varsa diğer DM'leri devre dışı bırak)
 sudo systemctl disable gdm.service lightdm.service ly.service 2>/dev/null || true
 sudo systemctl enable sddm.service -f
+sudo systemctl set-default graphical.target
 info "SDDM etkinleştirildi"
 
 # SDDM Wayland config
@@ -661,6 +662,8 @@ if [[ "$IS_VM" == true ]]; then
     sudo sed -i 's/^GreeterEnvironment=.*/GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1,QT_QUICK_BACKEND=software/' /etc/sddm.conf.d/10-wayland.conf
     info "SDDM VM fix uygulandı"
 fi
+
+sudo systemctl start sddm.service 2>/dev/null || warn "SDDM hemen başlatılamadı; reboot sonrası graphical.target ile tekrar denenecek."
 
 # ============================================================
 # 11. LOCALE (UTF-8)
