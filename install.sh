@@ -126,15 +126,11 @@ else
     warn "Mirrorlist indirilemedi; mevcut mirrorlist kullanılacak"
 fi
 
-if grep -q '^#ParallelDownloads' /etc/pacman.conf; then
-    sudo sed -i 's/^#ParallelDownloads.*/ParallelDownloads = 8/' /etc/pacman.conf
-elif ! grep -q '^ParallelDownloads' /etc/pacman.conf; then
-    echo 'ParallelDownloads = 8' | sudo tee -a /etc/pacman.conf > /dev/null
-fi
-
-if ! grep -q '^DisableDownloadTimeout' /etc/pacman.conf; then
-    echo 'DisableDownloadTimeout' | sudo tee -a /etc/pacman.conf > /dev/null
-fi
+sudo sed -i \
+    -e '/^#\?ParallelDownloads[[:space:]]*=/d' \
+    -e '/^DisableDownloadTimeout$/d' \
+    /etc/pacman.conf
+sudo sed -i '/^\[options\]/a DisableDownloadTimeout\nParallelDownloads = 8' /etc/pacman.conf
 
 sudo pacman -Syy --noconfirm
 
@@ -146,7 +142,7 @@ PACMAN_PKGS=(
     wget file git psmisc btop fzf direnv ffmpeg bc tree jq socat unzip pciutils
 
     # Python
-    python python-pip python-websockets geckodriver
+    python python-pip python-websockets
 
     # Editör & terminal
     neovim kitty
@@ -177,11 +173,11 @@ PACMAN_PKGS=(
 
     # Qt5/Qt6 (SDDM + Quickshell)
     qt5-wayland qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
-    qt6-wayland qt6-multimedia qt6-5compat qt6-websockets qt6ct
+    qt6-wayland qt6-multimedia qt6-multimedia-ffmpeg qt6-5compat qt6-websockets qt6ct
 
     # Ses
     pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
-    easyeffects ladspa lsp-plugins libpulse
+    easyeffects ladspa lsp-plugins-ladspa lsp-plugins-lv2 libpulse
 
     # Bluetooth & ağ
     bluez bluez-utils blueman networkmanager
@@ -264,7 +260,6 @@ AUR_PKGS=(
     eww
     wlogout
     sddm-sugar-candy-git
-    python-selenium
 
     # Fontlar
     ttf-udev-gothic
@@ -460,19 +455,13 @@ if [ -d "$REPO_FONTS" ]; then
     cp -r "$REPO_FONTS/"* "$TARGET_FONTS/" 2>/dev/null || true
 fi
 
-# Iosevka Nerd Font indir
-if [ -d "$TARGET_FONTS/IosevkaNerdFont" ] && [ "$(ls -A "$TARGET_FONTS/IosevkaNerdFont" 2>/dev/null | grep -i '\.ttf')" ]; then
+# Iosevka AUR paketi sistem fontu olarak gelmişse tekrar indirme.
+if fc-match "Iosevka Nerd Font" 2>/dev/null | grep -qi "Iosevka"; then
+    info "Iosevka Nerd Font sistemde mevcut"
+elif [ -d "$TARGET_FONTS/IosevkaNerdFont" ] && [ "$(ls -A "$TARGET_FONTS/IosevkaNerdFont" 2>/dev/null | grep -i '\.ttf')" ]; then
     info "Iosevka Nerd Font zaten kurulu"
 else
-    info "Iosevka Nerd Font indiriliyor..."
-    mkdir -p /tmp/iosevka-pack
-    curl -fLo /tmp/iosevka-pack/Iosevka.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Iosevka.zip
-    unzip -q /tmp/iosevka-pack/Iosevka.zip -d /tmp/iosevka-pack/
-    mkdir -p "$TARGET_FONTS/IosevkaNerdFont"
-    mv /tmp/iosevka-pack/*.ttf "$TARGET_FONTS/IosevkaNerdFont/"
-    sudo cp -r "$TARGET_FONTS/IosevkaNerdFont" /usr/share/fonts/
-    rm -rf /tmp/iosevka-pack
-    info "Iosevka Nerd Font kuruldu"
+    warn "Iosevka Nerd Font bulunamadı; AUR font kurulumu başarısız olmuş olabilir"
 fi
 
 find "$TARGET_FONTS" -type f -exec chmod 644 {} \; 2>/dev/null

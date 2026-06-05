@@ -11,6 +11,10 @@ UPDATER_SCRIPT="$HOME/.config/hypr/scripts/quickshell/calendar/schedule/get_sche
 mkdir -p "$CACHE_DIR"
 
 trigger_update() {
+    if ! python3 -c "import selenium" >/dev/null 2>&1 || ! command -v geckodriver >/dev/null 2>&1; then
+        return
+    fi
+
     # PREVENT OVERLAP: Check if the python script is already running
     if pgrep -f "python3.*get_schedule.py" > /dev/null; then
         return # Silently exit if an update is already in progress
