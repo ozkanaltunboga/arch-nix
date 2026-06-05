@@ -121,7 +121,7 @@ PACMAN_PKGS=(
     wget file git psmisc btop fzf direnv ffmpeg bc tree jq socat unzip pciutils
 
     # Python
-    python python-pip python-websockets python-selenium geckodriver
+    python python-pip python-websockets geckodriver
 
     # Editör & terminal
     neovim kitty
@@ -239,6 +239,7 @@ AUR_PKGS=(
     eww
     wlogout
     sddm-sugar-candy-git
+    python-selenium
 
     # Fontlar
     ttf-udev-gothic
