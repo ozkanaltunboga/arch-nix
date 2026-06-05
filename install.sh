@@ -408,15 +408,25 @@ if [ -f "$HYPR_CONF" ]; then
     sed -i "s|^env = WALLPAPER_DIR,.*|env = WALLPAPER_DIR,$WALLPAPER_DIR|" "$HYPR_CONF"
     sed -i '/^env = SCRIPT_DIR,/d' "$HYPR_CONF"
     sed -i '/^env = QT_QUICK_BACKEND,/d' "$HYPR_CONF"
+    sed -i '/^env = WLR_RENDERER_ALLOW_SOFTWARE,/d' "$HYPR_CONF"
+    sed -i '/^env = LIBGL_ALWAYS_SOFTWARE,/d' "$HYPR_CONF"
     info "Ortam değişkenleri güncellendi"
 
     # --- VM GPU Fix ---
     if [[ "$IS_VM" == true ]]; then
-        sed -i '/^env = QML_XHR_ALLOW_FILE_READ,1/a env = QT_QUICK_BACKEND,software' "$HYPR_CONF"
+        sed -i '/^env = QML_XHR_ALLOW_FILE_READ,1/a env = QT_QUICK_BACKEND,software\nenv = WLR_RENDERER_ALLOW_SOFTWARE,1\nenv = LIBGL_ALWAYS_SOFTWARE,1' "$HYPR_CONF"
+        for vm_env in WLR_RENDERER_ALLOW_SOFTWARE=1 LIBGL_ALWAYS_SOFTWARE=1; do
+            vm_key="${vm_env%%=*}"
+            if grep -q "^${vm_key}=" /etc/environment 2>/dev/null; then
+                sudo sed -i "s|^${vm_key}=.*|${vm_env}|" /etc/environment
+            else
+                echo "$vm_env" | sudo tee -a /etc/environment > /dev/null
+            fi
+        done
         # Kitty software rendering
         sed -i 's|^\$terminal = kitty|$terminal = env LIBGL_ALWAYS_SOFTWARE=1 kitty|' "$HYPR_CONF"
         sed -i 's|^\$terminal = env LIBGL_ALWAYS_SOFTWARE=1 env LIBGL_ALWAYS_SOFTWARE=1|$terminal = env LIBGL_ALWAYS_SOFTWARE=1|' "$HYPR_CONF"
-        info "VM GPU fix'leri uygulandı (QT_QUICK_BACKEND=software, LIBGL_ALWAYS_SOFTWARE=1)"
+        info "VM GPU fix'leri uygulandı (software rendering env'leri aktif)"
     fi
 
     # --- NVIDIA env'leri ---
@@ -680,8 +690,9 @@ fi
 
 # VM ise SDDM'e de software rendering ekle
 if [[ "$IS_VM" == true ]]; then
+    sudo sed -i 's/^DisplayServer=.*/DisplayServer=x11-user/' /etc/sddm.conf.d/10-wayland.conf
     sudo sed -i 's/^GreeterEnvironment=.*/GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1,QT_QUICK_BACKEND=software/' /etc/sddm.conf.d/10-wayland.conf
-    info "SDDM VM fix uygulandı"
+    info "SDDM VM fix uygulandı (x11-user greeter + software rendering)"
 fi
 
 sudo systemctl start sddm.service 2>/dev/null || warn "SDDM hemen başlatılamadı; reboot sonrası graphical.target ile tekrar denenecek."
