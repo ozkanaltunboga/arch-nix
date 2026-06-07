@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+
+SSH_DIR="$HOME/.ssh"
+KEYS_DIR="$HOME/Documents/keys"
+
+echo -e "\n${BOLD}${CYAN}SSH Key Generator${NC}\n"
+
+read -rp "Key adı (örn: github_key): " KEY_NAME
+[[ -z "$KEY_NAME" ]] && error "Key adı boş olamaz!"
+
+read -rp "E-posta (örn: user@example.com): " EMAIL
+[[ -z "$EMAIL" ]] && error "E-posta boş olamaz!"
+
+echo -e "\nKey tipi seçin:"
+echo "  1) Ed25519 (önerilen)"
+echo "  2) RSA 4096"
+read -rp "Seçim [1]: " CHOICE
+CHOICE=${CHOICE:-1}
+
+mkdir -p "$SSH_DIR" "$KEYS_DIR"
+chmod 700 "$SSH_DIR" "$KEYS_DIR"
+
+KEY_PATH="$SSH_DIR/$KEY_NAME"
+
+if [[ -f "$KEY_PATH" ]]; then
+    error "Bu isimde bir key zaten var: $KEY_PATH"
+fi
+
+case "$CHOICE" in
+    1)
+        ssh-keygen -t ed25519 -C "$EMAIL" -f "$KEY_PATH" -N ""
+        ;;
+    2)
+        ssh-keygen -t rsa -b 4096 -C "$EMAIL" -f "$KEY_PATH" -N ""
+        ;;
+    *)
+        error "Geçersiz seçim!"
+        ;;
+esac
+
+cp "$KEY_PATH" "$KEYS_DIR/"
+cp "$KEY_PATH.pub" "$KEYS_DIR/"
+
+eval "$(ssh-agent -s)"
+ssh-add "$KEY_PATH"
+
+echo -e "\n${GREEN}✓ Key oluşturuldu!${NC}"
+echo -e "  Özel key:  ${CYAN}$KEY_PATH${NC}"
+echo -e "  Genel key: ${CYAN}$KEY_PATH.pub${NC}"
+echo -e "  Yedek:     ${CYAN}$KEYS_DIR/${NC}"
+echo -e "\n${BOLD}Public key (panoya kopyalandı):${NC}"
+cat "$KEY_PATH.pub" | wl-copy
+echo -e "${GREEN}✓ Public key panoya kopyalandı!${NC}\n"

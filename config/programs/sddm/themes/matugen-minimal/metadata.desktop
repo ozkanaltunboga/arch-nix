@@ -1,0 +1,7 @@
+[SddmGreeterTheme]
+Name=Matugen Minimal
+Description=Minimal SDDM theme with Matugen color integration
+Author=arch-nix
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf

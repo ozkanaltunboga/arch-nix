@@ -158,13 +158,14 @@ PACMAN_PKGS=(
 
     # Geliştirici araçlar
     fastfetch grim slurp swappy playerctl imagemagick
-    ripgrep fd lua-language-server pyright
+    ripgrep fd lua-language-server pyright nil
     jdk8-openjdk wmctrl qbittorrent
 
     # Wayland / Masaüstü
     hyprland xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
     wl-clipboard cliphist rofi-wayland pavucontrol nautilus
-    alsa-utils pamixer brightnessctl acpi iw hyprlock
+    alsa-utils pamixer brightnessctl acpi iw     hyprlock
+    hypridle
     gtk3 cava inotify-tools
 
     # Dock & ikon temaları
@@ -206,8 +207,26 @@ PACMAN_PKGS=(
     # Sistem
     cups openssh zsh lm_sensors fortune-mod libnotify go-yq
 
+    # Güvenlik
+    ufw fail2ban
+
+    # Sistem sağlığı
+    zram earlyoom pacman-contrib
+
+    # Performans
+    libva-utils preload profile-sync-daemon plymouth
+
+    # Developer runtime'lar
+    nodejs npm go rustup pyenv
+
+    # Senkronizasyon
+    syncthing
+
     # Fontlar
     noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation ttf-jetbrains-mono
+
+    # Cursor tema
+    xcursor-breeze
 
     # SDDM
     sddm
@@ -218,10 +237,10 @@ if [[ "$IS_NVIDIA" == true ]]; then
     PACMAN_PKGS+=(nvidia nvidia-utils lib32-nvidia-utils nvidia-prime)
 fi
 if [[ "$IS_AMD" == true ]]; then
-    PACMAN_PKGS+=(mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon)
+    PACMAN_PKGS+=(mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon libva-mesa-driver)
 fi
 if [[ "$IS_INTEL" == true ]]; then
-    PACMAN_PKGS+=(mesa lib32-mesa vulkan-intel lib32-vulkan-intel)
+    PACMAN_PKGS+=(mesa lib32-mesa vulkan-intel lib32-vulkan-intel intel-media-driver)
 fi
 if [[ "$IS_VM" == true ]]; then
     PACMAN_PKGS+=(mesa)
@@ -241,9 +260,68 @@ if [[ "$IS_VM" == true ]]; then
     esac
 fi
 
-# Steam sadece gerçek donanımda
+# Steam ve gaming sadece gerçek donanımda
 if [[ "$IS_VM" == false ]]; then
-    PACMAN_PKGS+=(steam gamemode lib32-gamemode)
+    PACMAN_PKGS+=(
+        steam
+        gamemode
+        lib32-gamemode
+        
+        # 32-bit kütüphaneler (oyunlar için kritik)
+        lib32-glibc
+        lib32-libx11
+        lib32-libxcomposite
+        lib32-libxcursor
+        lib32-libxi
+        lib32-libxrandr
+        lib32-libxtst
+        lib32-libxinerama
+        lib32-mesa
+        lib32-libva
+        lib32-libvdpau
+        lib32-sdl2
+        lib32-sdl_image
+        lib32-libpng
+        lib32-libjpeg-turbo
+        lib32-freetype2
+        lib32-fontconfig
+        lib32-gtk3
+        lib32-gst-plugins-base
+        lib32-gst-plugins-good
+        lib32-openal
+        lib32-libpulse
+        lib32-alsa-plugins
+        lib32-libcurl-gnutls
+        lib32-nss
+        lib32-nspr
+        lib32-dbus
+        lib32-libdrm
+        lib32-libxss
+        lib32-libgcrypt
+        
+        # Controller desteği
+        xboxdrv
+        steam-devices
+        
+        # Gaming araçları
+        mangohud
+        lib32-mangohud
+        goverlay
+        gamescope
+        vkbasalt
+        lib32-vkbasalt
+    )
+    
+    # GPU-specific 32-bit Vulkan
+    if [[ "$IS_NVIDIA" == true ]]; then
+        PACMAN_PKGS+=(lib32-nvidia-utils)
+    fi
+    if [[ "$IS_AMD" == true ]]; then
+        PACMAN_PKGS+=(lib32-vulkan-radeon)
+    fi
+    if [[ "$IS_INTEL" == true ]]; then
+        PACMAN_PKGS+=(lib32-vulkan-intel)
+    fi
 fi
 
 AUR_PKGS=(
@@ -257,13 +335,15 @@ AUR_PKGS=(
     networkmanager-dmenu-git
     swayosd-git
     swaync
-    eww
     wlogout
     sddm-sugar-candy-git
 
     # Fontlar
     ttf-udev-gothic
     ttf-iosevka-nerd
+
+    # Developer araçlar
+    nvm
 
     # Tema
     adw-gtk-theme
@@ -281,7 +361,29 @@ AUR_PKGS=(
     timeshift
     bottles
     intellij-idea-community-edition
+    
+    # Gaming (sadece non-VM)
+    discord
 )
+
+# Gaming AUR paketleri (sadece gerçek donanım)
+if [[ "$IS_VM" == false ]]; then
+    AUR_PKGS+=(
+        lutris
+        protonup-qt
+        heroic-games-launcher-bin
+        wine-staging
+        dxvk-bin
+        vkd3d-proton-bin
+        lib32-gnutls
+        lib32-libldap
+        lib32-libgpg-error
+        lib32-libxml2
+        lib32-sdl2_image
+        lib32-sdl2_mixer
+        lib32-sdl2_ttf
+    )
+fi
 
 # ============================================================
 # 4. PAKET KURULUMU
@@ -342,6 +444,10 @@ deploy "$REPO_DIR/config/programs/rofi"       "$TARGET_CONFIG/rofi"
 deploy "$REPO_DIR/config/programs/matugen"    "$TARGET_CONFIG/matugen"
 deploy "$REPO_DIR/config/programs/swaync"     "$TARGET_CONFIG/swaync"
 deploy "$REPO_DIR/config/programs/swayosd"    "$TARGET_CONFIG/swayosd"
+if [ ! -d "$TARGET_CONFIG/swayosd" ]; then
+    mkdir -p "$TARGET_CONFIG/swayosd"
+    info "swayosd dizini oluşturuldu (fallback)"
+fi
 deploy "$REPO_DIR/config/programs/wlogout"    "$TARGET_CONFIG/wlogout"
 deploy "$REPO_DIR/config/programs/nwg-dock-hyprland" "$TARGET_CONFIG/nwg-dock-hyprland"
 chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/launch.sh" 2>/dev/null || true
@@ -349,6 +455,21 @@ deploy "$REPO_DIR/config/programs/neovim/nvim" "$TARGET_CONFIG/nvim"
 deploy "$REPO_DIR/config/sessions/hyprland"    "$TARGET_CONFIG/hypr"
 chmod +x "$TARGET_CONFIG/hypr/scripts/lock.sh" 2>/dev/null || true
 chmod +x "$TARGET_CONFIG/hypr/scripts/lockscreen_prepare.sh" 2>/dev/null || true
+
+# Plymouth deploy
+if [ -d "$REPO_DIR/config/programs/plymouth" ]; then
+    sudo mkdir -p /usr/share/plymouth/themes
+    sudo cp -r "$REPO_DIR/config/programs/plymouth/simple" /usr/share/plymouth/themes/
+    sudo plymouth-set-default-theme -R simple 2>/dev/null || true
+    info "Plymouth boot splash kuruldu"
+fi
+
+# EasyEffects presets deploy
+if [ -d "$REPO_DIR/config/media/easyeffects" ]; then
+    mkdir -p "$HOME/.config/easyeffects/input" "$HOME/.config/easyeffects/output"
+    cp "$REPO_DIR/config/media/easyeffects/default-preset.json" "$HOME/.config/easyeffects/output/"
+    info "EasyEffects preset'leri kuruldu"
+fi
 
 # Cava: config_base
 deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
@@ -513,6 +634,20 @@ fi
 if [[ "$SHELL" != "$(which zsh)" ]]; then
     chsh -s "$(which zsh)"
     info "Varsayılan shell: zsh"
+fi
+
+# ============================================================
+# 8.1 NEOVIM PLUGINS (lazy.nvim)
+# ============================================================
+step "Neovim plugin manager kuruluyor"
+
+LAZY_PATH="$HOME/.local/share/nvim/lazy/lazy.nvim"
+if [[ ! -d "$LAZY_PATH" ]]; then
+    git clone --filter=blob:none https://github.com/folke/lazy.nvim.git \
+        --branch=stable "$LAZY_PATH"
+    info "lazy.nvim kuruldu"
+else
+    info "lazy.nvim zaten kurulu"
 fi
 
 # ============================================================
@@ -754,6 +889,308 @@ if [ -f "$REPO_DIR/utils/bin/cava" ]; then
     cp "$REPO_DIR/utils/bin/cava" "$HOME/.local/bin/cava"
     chmod +x "$HOME/.local/bin/cava"
     info "Cava wrapper kuruldu"
+fi
+
+# Utility script'leri deploy
+if [ -f "$REPO_DIR/utils/bin/ssh-keygen-helper" ]; then
+    cp "$REPO_DIR/utils/bin/ssh-keygen-helper" "$HOME/.local/bin/ssh-keygen-helper"
+    chmod +x "$HOME/.local/bin/ssh-keygen-helper"
+    info "SSH key helper kuruldu"
+fi
+
+if [ -f "$REPO_DIR/utils/bin/runtime-installer" ]; then
+    cp "$REPO_DIR/utils/bin/runtime-installer" "$HOME/.local/bin/runtime-installer"
+    chmod +x "$HOME/.local/bin/runtime-installer"
+    info "Runtime installer kuruldu"
+fi
+
+if [ -f "$REPO_DIR/utils/bin/system-cleanup" ]; then
+    cp "$REPO_DIR/utils/bin/system-cleanup" "$HOME/.local/bin/system-cleanup"
+    chmod +x "$HOME/.local/bin/system-cleanup"
+    info "System cleanup kuruldu"
+fi
+
+# ============================================================
+# 16. GÜVENLIK YAPILANDIRMASI
+# ============================================================
+step "Güvenlik yapılandırılıyor"
+
+# UFW Firewall
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw --force enable
+sudo systemctl enable --now ufw
+info "UFW firewall aktif (SSH izinli)"
+
+# fail2ban
+sudo systemctl enable --now fail2ban
+if [ -f "$REPO_DIR/config/security/jail.local" ]; then
+    sudo cp "$REPO_DIR/config/security/jail.local" /etc/fail2ban/jail.local
+    sudo systemctl restart fail2ban
+    info "fail2ban yapılandırıldı"
+fi
+
+# Otomatik güvenlik güncellemeleri (pacman-contrib ile)
+cat <<'EOF' | sudo tee /etc/systemd/system/pacman-auto-update.service > /dev/null
+[Unit]
+Description=Automatic Pacman Security Updates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/pacman -Syu --noconfirm
+EOF
+
+cat <<'EOF' | sudo tee /etc/systemd/system/pacman-auto-update.timer > /dev/null
+[Unit]
+Description=Run Pacman Security Updates Weekly
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl enable --now pacman-auto-update.timer
+info "Haftalık otomatik güncelleme zamanlandı"
+
+# ============================================================
+# 17. SISTEM SAGLIGI
+# ============================================================
+step "Sistem sağlığı yapılandırılıyor"
+
+# zram (RAM sıkıştırma)
+sudo systemctl enable --now zramd
+info "zram aktif (RAM sıkıştırma)"
+
+# earlyoom (out-of-memory killer)
+sudo systemctl enable --now earlyoom
+info "earlyoom aktif (OOM koruması)"
+
+# Otomatik temizlik timer'ları
+cat <<'EOF' | sudo tee /etc/systemd/system/pacman-cache-clean.service > /dev/null
+[Unit]
+Description=Clean Pacman Cache Monthly
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/paccache -r -k 2
+EOF
+
+cat <<'EOF' | sudo tee /etc/systemd/system/pacman-cache-clean.timer > /dev/null
+[Unit]
+Description=Monthly Pacman Cache Cleanup
+
+[Timer]
+OnCalendar=monthly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl enable --now pacman-cache-clean.timer
+info "Aylık pacman cache temizliği zamanlandı"
+
+# Journal boyut limiti
+sudo mkdir -p /etc/systemd/journald.conf.d
+cat <<'EOF' | sudo tee /etc/systemd/journald.conf.d/size-limit.conf > /dev/null
+[Journal]
+SystemMaxUse=500M
+MaxRetentionSec=1month
+EOF
+sudo systemctl restart systemd-journald
+info "Journal boyut limiti: 500MB / 1 ay"
+
+# Orphan paket temizliği
+sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || info "Orphan paket yok"
+
+# ============================================================
+# 18. PERFORMANS OPTIMIZASYONLARI
+# ============================================================
+step "Performans optimizasyonları"
+
+# preload (sık kullanılan uygulamaları önceden yükle)
+sudo systemctl enable --now preload
+info "preload aktif (uygulama önyükleme)"
+
+# profile-sync-daemon (browser profile'ları RAM'e taşı)
+mkdir -p "$HOME/.config/psd"
+cat <<'EOF' > "$HOME/.config/psd/psd.conf"
+USE_OVERLAYFS="yes"
+BROWSERS="firefox chromium google-chrome"
+EOF
+systemctl --user enable --now psd
+info "profile-sync-daemon aktif (browser RAM cache)"
+
+# VA-API yapılandırması
+if [[ "$IS_INTEL" == true ]]; then
+    export LIBVA_DRIVER_NAME=iHD
+    echo 'export LIBVA_DRIVER_NAME=iHD' >> "$HOME/.zshrc"
+    info "VA-API: Intel iHD driver"
+elif [[ "$IS_AMD" == true ]]; then
+    export LIBVA_DRIVER_NAME=radeonsi
+    echo 'export LIBVA_DRIVER_NAME=radeonsi' >> "$HOME/.zshrc"
+    info "VA-API: AMD radeonsi driver"
+fi
+
+# Plymouth kernel parameter ekle
+if command -v plymouth &>/dev/null; then
+    if grep -q "GRUB_CMDLINE_LINUX_DEFAULT" /etc/default/grub; then
+        if ! grep -q "splash" /etc/default/grub; then
+            sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 splash quiet"/' /etc/default/grub
+            sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+            info "Plymouth kernel parameter eklendi"
+        fi
+    fi
+fi
+
+# ============================================================
+# 19. DEVELOPER RUNTIME'LAR
+# ============================================================
+step "Developer runtime'lar yapılandırılıyor"
+
+# Node.js (nvm ile version management)
+if command -v nvm &>/dev/null; then
+    nvm install --lts
+    nvm use --lts
+    info "Node.js LTS kuruldu (nvm ile)"
+else
+    info "Node.js pacman'dan kuruldu"
+fi
+
+# Python (pyenv ile version management)
+if command -v pyenv &>/dev/null; then
+    pyenv install 3.12.0 2>/dev/null || true
+    pyenv global 3.12.0 2>/dev/null || true
+    info "Python 3.12 kuruldu (pyenv ile)"
+    
+    # pyenv init ekle
+    if ! grep -q "pyenv" "$HOME/.zshrc"; then
+        cat <<'EOF' >> "$HOME/.zshrc"
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+EOF
+    fi
+fi
+
+# Rust (rustup ile)
+if command -v rustup &>/dev/null; then
+    rustup default stable
+    info "Rust stable kuruldu (rustup ile)"
+fi
+
+# Go
+if command -v go &>/dev/null; then
+    mkdir -p "$HOME/go/bin"
+    if ! grep -q "GOPATH" "$HOME/.zshrc"; then
+        cat <<'EOF' >> "$HOME/.zshrc"
+
+# Go
+export GOPATH="$HOME/go"
+export PATH="$GOPATH/bin:$PATH"
+EOF
+    fi
+    info "Go yapılandırıldı"
+fi
+
+# ============================================================
+# 20. SENKRONIZASYON
+# ============================================================
+step "Syncthing yapılandırılıyor"
+
+sudo systemctl enable --now syncthing@$USER.service
+info "Syncthing aktif (http://localhost:8384)"
+
+# ============================================================
+# 21. DEVELOPER ARAÇLARI
+# ============================================================
+step "Developer araçları yapılandırılıyor"
+
+# Git global config
+if [ -f "$REPO_DIR/config/dev/gitconfig" ]; then
+    cp "$REPO_DIR/config/dev/gitconfig" "$HOME/.gitconfig"
+    info "Git global config kuruldu"
+fi
+
+# direnv hook
+if ! grep -q "direnv" "$HOME/.zshrc"; then
+    echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
+    info "direnv hook eklendi"
+fi
+
+# ============================================================
+# 22. DOKUMANTASYON
+# ============================================================
+step "Dokümantasyon kuruluyor"
+
+if [ -d "$REPO_DIR/docs" ]; then
+    mkdir -p "$HOME/Documents/arch-nix-docs"
+    cp -r "$REPO_DIR/docs/"* "$HOME/Documents/arch-nix-docs/" 2>/dev/null || true
+    info "Dokümantasyon: ~/Documents/arch-nix-docs/"
+fi
+
+# ============================================================
+# 23. GAMING YAPILANDIRMASI (sadece gerçek donanım)
+# ============================================================
+if [[ "$IS_VM" == false ]]; then
+    step "Gaming yapılandırılıyor"
+
+    # GameMode config
+    if [ -f "$REPO_DIR/config/gaming/gamemode.ini" ]; then
+        mkdir -p "$HOME/.config"
+        cp "$REPO_DIR/config/gaming/gamemode.ini" "$HOME/.config/gamemode.ini"
+        info "GameMode config kuruldu"
+    fi
+
+    # MangoHud config
+    if [ -f "$REPO_DIR/config/gaming/MangoHud.conf" ]; then
+        mkdir -p "$HOME/.config/MangoHud"
+        cp "$REPO_DIR/config/gaming/MangoHud.conf" "$HOME/.config/MangoHud/MangoHud.conf"
+        info "MangoHud config kuruldu"
+    fi
+
+    # Gaming Hyprland rules (ek bilgi olarak)
+    if [ -f "$REPO_DIR/config/gaming/hyprland-gaming.conf" ]; then
+        mkdir -p "$HOME/.config/hypr"
+        cp "$REPO_DIR/config/gaming/hyprland-gaming.conf" "$HOME/.config/hypr/gaming-rules.conf"
+        info "Gaming Hyprland kuralları: ~/.config/hypr/gaming-rules.conf"
+        info "  Bu dosyayı hyprland.conf'a include edin veya kuralları manuel ekleyin"
+    fi
+
+    # Gaming optimizer script
+    if [ -f "$REPO_DIR/utils/bin/gaming-optimizer" ]; then
+        cp "$REPO_DIR/utils/bin/gaming-optimizer" "$HOME/.local/bin/gaming-optimizer"
+        chmod +x "$HOME/.local/bin/gaming-optimizer"
+        info "Gaming optimizer kuruldu: gaming-optimizer"
+    fi
+
+    # Steam launch options helper
+    cat <<'STEAMHELP' >> "$HOME/.zshrc"
+
+# Gaming aliases
+alias steam-mango='MANGOHUD=1 gamemoderun %command%'
+alias steam-gamemode='gamemoderun %command%'
+alias steam-vulkan='MANGOHUD=1 DXVK_HUD=1 gamemoderun %command%'
+STEAMHELP
+
+    # Kullanıcıyı gamemode grubuna ekle
+    sudo usermod -aG gamemode "$USER" 2>/dev/null || true
+
+    # Gamescope Wayland socket izinleri
+    if command -v gamescope &>/dev/null; then
+        info "gamescope kuruldu - Steam'de 'gamescope -- %command%' kullanabilirsiniz"
+    fi
+
+    info "Gaming araçları: Steam, Lutris, Heroic, ProtonUp-Qt, MangoHud, GOverlay, GameScope"
 fi
 
 # ============================================================

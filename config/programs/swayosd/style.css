@@ -1,0 +1,41 @@
+window#OSD {
+  background-color: rgba(17, 17, 27, 0.85);
+  border-radius: 16px;
+  border: 1px solid rgba(205, 214, 244, 0.1);
+  padding: 12px 20px;
+}
+
+#OSD .osd-icon {
+  color: #89b4fa;
+  font-size: 24px;
+}
+
+#OSD .osd-label {
+  color: #cdd6f4;
+  font-size: 14px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+#OSD .osd-value {
+  color: #89b4fa;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#OSD .osd-progress {
+  background-color: rgba(49, 50, 68, 0.6);
+  border-radius: 8px;
+  min-height: 8px;
+  margin-top: 8px;
+}
+
+#OSD .osd-progress .osd-progress-bar {
+  background: linear-gradient(to right, #89b4fa, #b4befe);
+  border-radius: 8px;
+  min-height: 8px;
+}
+
+#OSD .osd-progress .osd-progress-bar.muted {
+  background: #585b70;
+}

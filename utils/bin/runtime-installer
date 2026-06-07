@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+warn()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
+
+echo -e "\n${BOLD}${CYAN}Runtime Installer Helper${NC}\n"
+
+echo "Kurulum yapılacak runtime'ları seçin:"
+echo "  1) Node.js LTS (nvm ile)"
+echo "  2) Python 3.12 (pyenv ile)"
+echo "  3) Rust stable (rustup ile)"
+echo "  4) Go (GOPATH setup)"
+echo "  5) Tümü"
+echo ""
+read -rp "Seçim [5]: " CHOICE
+CHOICE=${CHOICE:-5}
+
+install_node() {
+    info "Node.js kuruluyor..."
+    if command -v nvm &>/dev/null; then
+        nvm install --lts
+        nvm use --lts
+        nvm alias default lts/*
+        info "Node.js $(node --version) kuruldu"
+        
+        # Global paketler
+        npm install -g yarn pnpm typescript ts-node
+        info "Global npm paketleri kuruldu: yarn, pnpm, typescript, ts-node"
+    else
+        warn "nvm bulunamadı, pacman'dan nodejs kuruluyor"
+        sudo pacman -S --needed --noconfirm nodejs npm
+    fi
+}
+
+install_python() {
+    info "Python kuruluyor..."
+    if command -v pyenv &>/dev/null; then
+        pyenv install 3.12.0 2>/dev/null || true
+        pyenv global 3.12.0
+        info "Python $(python --version) kuruldu"
+        
+        # pip paketleri
+        pip install --user pipx
+        pipx ensurepath
+        pipx install ruff black mypy
+        info "Python araçları kuruldu: pipx, ruff, black, mypy"
+    else
+        warn "pyenv bulunamadı, pacman'dan python kuruluyor"
+        sudo pacman -S --needed --noconfirm python python-pip
+    fi
+}
+
+install_rust() {
+    info "Rust kuruluyor..."
+    if command -v rustup &>/dev/null; then
+        rustup default stable
+        rustup component add rustfmt clippy rust-analyzer
+        info "Rust $(rustc --version) kuruldu"
+        
+        # Cargo araçları
+        cargo install cargo-edit cargo-watch cargo-expand
+        info "Cargo araçları kuruldu: cargo-edit, cargo-watch, cargo-expand"
+    else
+        warn "rustup bulunamadı, pacman'dan rust kuruluyor"
+        sudo pacman -S --needed --noconfirm rust
+    fi
+}
+
+install_go() {
+    info "Go kuruluyor..."
+    if command -v go &>/dev/null; then
+        mkdir -p "$HOME/go/bin"
+        info "Go $(go version) kuruldu"
+        
+        # Go araçları
+        go install golang.org/x/tools/gopls@latest
+        go install github.com/go-delve/delve/cmd/dlv@latest
+        info "Go araçları kuruldu: gopls, delve"
+    else
+        warn "go bulunamadı, pacman'dan kuruluyor"
+        sudo pacman -S --needed --noconfirm go
+    fi
+}
+
+case "$CHOICE" in
+    1) install_node ;;
+    2) install_python ;;
+    3) install_rust ;;
+    4) install_go ;;
+    5)
+        install_node
+        install_python
+        install_rust
+        install_go
+        ;;
+    *)
+        echo "Geçersiz seçim!"
+        exit 1
+        ;;
+esac
+
+echo -e "\n${GREEN}✓ Kurulum tamamlandı!${NC}"
+echo -e "Yeni terminal açın veya ${CYAN}source ~/.zshrc${NC} çalıştırın.\n"

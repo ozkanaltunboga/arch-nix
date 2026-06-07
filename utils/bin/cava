@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+CAVA_COLORS="/tmp/cava_colors"
+CAVA_BASE="$HOME/.config/cava/config_base"
+
+if [ -f "$CAVA_COLORS" ]; then
+    exec cava -c <(cat "$CAVA_BASE" 2>/dev/null; echo ""; echo "[color]"; cat "$CAVA_COLORS")
+else
+    exec cava ${CAVA_BASE:+-c "$CAVA_BASE"}
+fi

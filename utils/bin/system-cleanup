@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+warn()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
+
+echo -e "\n${BOLD}${CYAN}Sistem Temizlik Aracı${NC}\n"
+
+echo "Temizlik yapılacak alanları seçin:"
+echo "  1) Pacman cache (eski paketler)"
+echo "  2) Journal logları (eski loglar)"
+echo "  3) Orphan paketler"
+echo "  4) Thumbnail cache"
+echo "  5) Trash (çöp kutusu)"
+echo "  6) Tümü"
+echo ""
+read -rp "Seçim [6]: " CHOICE
+CHOICE=${CHOICE:-6}
+
+clean_pacman() {
+    info "Pacman cache temizleniyor..."
+    sudo paccache -r -k 2
+    info "Son 2 versiyon tutuldu"
+}
+
+clean_journal() {
+    info "Journal logları temizleniyor..."
+    sudo journalctl --vacuum-time=7d
+    sudo journalctl --vacuum-size=500M
+    info "7 günlük log tutuldu (max 500MB)"
+}
+
+clean_orphans() {
+    info "Orphan paketler temizleniyor..."
+    ORPHANS=$(pacman -Qtdq 2>/dev/null || true)
+    if [ -n "$ORPHANS" ]; then
+        sudo pacman -Rns $ORPHANS
+        info "Orphan paketler kaldırıldı"
+    else
+        info "Orphan paket yok"
+    fi
+}
+
+clean_thumbnails() {
+    info "Thumbnail cache temizleniyor..."
+    rm -rf ~/.cache/thumbnails/*
+    info "Thumbnail cache temizlendi"
+}
+
+clean_trash() {
+    info "Çöp kutusu temizleniyor..."
+    rm -rf ~/.local/share/Trash/*
+    info "Çöp kutusu boşaltıldı"
+}
+
+case "$CHOICE" in
+    1) clean_pacman ;;
+    2) clean_journal ;;
+    3) clean_orphans ;;
+    4) clean_thumbnails ;;
+    5) clean_trash ;;
+    6)
+        clean_pacman
+        clean_journal
+        clean_orphans
+        clean_thumbnails
+        clean_trash
+        ;;
+    *)
+        echo "Geçersiz seçim!"
+        exit 1
+        ;;
+esac
+
+echo -e "\n${GREEN}✓ Temizlik tamamlandı!${NC}"
+
+# Disk kullanımını göster
+echo -e "\n${BOLD}Disk kullanımı:${NC}"
+df -h / | tail -n 1 | awk '{print "  Kullanılan: "$3" / "$2" ("$5")"}'

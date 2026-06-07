@@ -18,6 +18,44 @@ vim.opt.signcolumn = 'yes'
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
+  vim.fn.system({
+    "git", "clone", "--filter=blob:none",
+    "https://github.com/folke/lazy.nvim.git",
+    "--branch=stable", lazypath,
+  })
+end
+vim.opt.rtp:prepend(lazypath)
+
+require("lazy").setup({
+  { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
+  "nvim-treesitter/nvim-treesitter",
+  "lukas-reineke/indent-blankline.nvim",
+  "lewis6991/gitsigns.nvim",
+  "windwp/nvim-autopairs",
+  "numToStr/Comment.nvim",
+  "folke/which-key.nvim",
+  "nvim-tree/nvim-tree.lua",
+  "nvim-tree/nvim-web-devicons",
+  {
+    "nvim-telescope/telescope.nvim",
+    dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope-ui-select.nvim" },
+  },
+  "akinsho/bufferline.nvim",
+  "hrsh7th/nvim-cmp",
+  "hrsh7th/cmp-nvim-lsp",
+  "hrsh7th/cmp-buffer",
+  "hrsh7th/cmp-path",
+  "L3MON4D3/LuaSnip",
+  "saadparwaiz1/cmp_luasnip",
+  "neovim/nvim-lspconfig",
+  "rafamadriz/friendly-snippets",
+}, {
+  checker = { enabled = false },
+  change_detection = { notify = false },
+})
+
 -- DYNAMIC THEME LOGIC
 _G.reload_matugen_colors = function()
   -- vim.schedule ensures this massive UI update runs safely on the main event loop

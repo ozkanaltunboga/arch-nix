@@ -38,15 +38,17 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 | Terminal | Kitty, Zsh + Oh My Zsh |
 | Tarayıcı | Firefox, Google Chrome |
 | Editörler | Neovim, VS Code |
-| İletişim | Telegram |
+| İletişim | Telegram, Discord |
 | Notlar | Obsidian, Notion |
 | Medya | OBS Studio, MPV, Spotify, Cava |
 | Ofis | LibreOffice |
-| Geliştirici | Docker, Lazygit, IntelliJ IDEA, Codex |
+| Geliştirici | Docker, Lazygit, IntelliJ IDEA, Codex, Node.js, Python, Rust, Go |
 | Sanallaştırma | KVM/QEMU (virt-manager) |
 | Ağ Araçları | Wireshark, Nmap, Traceroute, MTR, Bandwhich |
 | CLI Araçları | btop, bat, zoxide, duf, ncdu, fzf, ripgrep |
-| Sistem | Timeshift, Flatpak, Bottles |
+| Sistem | Timeshift, Flatpak, Bottles, Syncthing |
+| Gaming | Steam, Lutris, Heroic, ProtonUp-Qt, MangoHud, GameMode, GameScope |
+| Güvenlik | UFW Firewall, fail2ban |
 
 ## Klavye Kısayolları
 
@@ -123,6 +125,43 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 ![preview1_1](previews/screenshot1_1.png)
 ![preview9](previews/screenshot9.png)
 ![preview3](previews/screenshot3.png)
+
+## Gaming
+
+Sistem, Linux'ta oyun oynamak için tam donanımlı olarak yapılandırılır:
+
+- **Steam** + Proton (Windows oyunları çalıştırma)
+- **Lutris** + **Heroic** (Epic Games, GOG)
+- **MangoHud** (FPS overlay, F12 ile toggle)
+- **GameMode** (otomatik CPU/GPU optimizasyonu)
+- **GameScope** (düşük input lag micro-compositor)
+- **DXVK** + **VKD3D-Proton** (DirectX → Vulkan)
+- **32-bit kütüphaneler** (eski oyunlar için)
+- **Controller desteği** (Xbox, PlayStation, Steam Controller)
+
+```bash
+# Gaming optimizasyonlarını uygula
+gaming-optimizer
+
+# Steam'i MangoHud + GameMode ile başlat
+MANGOHUD=1 gamemoderun steam
+
+# Varsayılan ayarlara dön
+gaming-optimizer restore
+```
+
+Detaylı bilgi için: [docs/gaming.md](docs/gaming.md)
+
+## Yardımcı Araçlar
+
+| Komut | İşlev |
+|-------|-------|
+| `gaming-optimizer` | Oyun için sistem optimizasyonları |
+| `system-cleanup` | Sistem temizliği (cache, log, orphan paketler) |
+| `runtime-installer` | Node.js/Python/Rust/Go kurulumu |
+| `ssh-keygen-helper` | İnteraktif SSH key oluşturma |
+| `fetch` | Matugen renkleriyle sistem bilgisi |
+| `qcopy` | fzf ile dosya seç, panoya kopyala |
 
 ## Krediler
 

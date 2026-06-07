@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
+warn()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
+error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+
+# Komut satırı argümanı kontrolü
+if [[ "${1:-}" == "restore" ]]; then
+    CHOICE=0
+else
+    echo -e "\n${BOLD}${CYAN}Gaming Optimizasyon Aracı${NC}\n"
+
+    echo "Yapılacak işlemleri seçin:"
+    echo "  1) CPU governor'ı performance moduna al"
+    echo "  2) Kernel parametrelerini optimize et"
+    echo "  3) Swappiness'i azalt (daha az swap kullanımı)"
+    echo "  4) Disk I/O scheduler'ı optimize et"
+    echo "  5) GPU güç profilini yüksek performansa al"
+    echo "  6) Tümü (önerilen)"
+    echo "  0) Varsayılan ayarlara dön (restore)"
+    echo ""
+    read -rp "Seçim [6]: " CHOICE
+    CHOICE=${CHOICE:-6}
+fi
+
+optimize_cpu() {
+    info "CPU governor performance moduna alınıyor..."
+    
+    # Mevcut governor'ı kaydet
+    CURRENT_GOV=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
+    echo "$CURRENT_GOV" > /tmp/cpu_governor_backup
+    
+    # Tüm CPU core'ları için performance governor
+    for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        echo "performance" | sudo tee "$cpu" > /dev/null 2>&1 || true
+    done
+    
+    info "CPU governor: performance (önceki: $CURRENT_GOV)"
+}
+
+optimize_kernel() {
+    info "Kernel parametreleri optimize ediliyor..."
+    
+    cat <<'EOF' | sudo tee /etc/sysctl.d/99-gaming.conf > /dev/null
+# Gaming kernel optimizations
+vm.swappiness = 10
+vm.vfs_cache_pressure = 50
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+
+# Network optimizations for gaming
+net.core.netdev_max_backlog = 16384
+net.core.somaxconn = 8192
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.tcp_tw_reuse = 1
+
+# Reduce latency
+kernel.sched_latency_ns = 12000000
+kernel.sched_min_granularity_ns = 4000000
+kernel.sched_wakeup_granularity_ns = 4000000
+EOF
+    
+    sudo sysctl --system > /dev/null 2>&1
+    info "Kernel parametreleri optimize edildi"
+}
+
+optimize_swappiness() {
+    info "Swappiness azaltılıyor..."
+    
+    # Mevcut değeri yedekle
+    CURRENT_SWAPPINESS=$(cat /proc/sys/vm/swappiness)
+    echo "$CURRENT_SWAPPINESS" > /tmp/swappiness_backup
+    
+    # Swappiness'i azalt
+    echo "vm.swappiness=10" | sudo tee /etc/sysctl.d/98-swappiness.conf > /dev/null
+    sudo sysctl -p /etc/sysctl.d/98-swappiness.conf > /dev/null 2>&1
+    
+    info "Swappiness: 10 (önceki: $CURRENT_SWAPPINESS)"
+}
+
+optimize_io() {
+    info "Disk I/O scheduler optimize ediliyor..."
+    
+    # NVMe için none, SATA için mq-deadline
+    for disk in /sys/block/{sd,nvme}*; do
+        [ -e "$disk" ] || continue
+        disk_name=$(basename "$disk")
+        
+        if [[ "$disk_name" == nvme* ]]; then
+            echo "none" | sudo tee "$disk/queue/scheduler" > /dev/null 2>&1 || true
+            info "$disk_name: none (NVMe optimized)"
+        else
+            echo "mq-deadline" | sudo tee "$disk/queue/scheduler" > /dev/null 2>&1 || true
+            info "$disk_name: mq-deadline (SATA optimized)"
+        fi
+    done
+}
+
+optimize_gpu() {
+    info "GPU güç profili yüksek performansa alınıyor..."
+    
+    # AMD GPU
+    if lspci | grep -qi "amd.*radeon\|amd.*radeon"; then
+        for card in /sys/class/drm/card*/device/power_dpm_force_performance_level; do
+            [ -e "$card" ] || continue
+            echo "high" | sudo tee "$card" > /dev/null 2>&1 || true
+        done
+        info "AMD GPU: high performance mode"
+    fi
+    
+    # NVIDIA GPU (nvidia-settings gerekli)
+    if command -v nvidia-settings &>/dev/null && lspci | grep -qi nvidia; then
+        nvidia-settings -a "[gpu:0]/GPUPowerMizerMode=1" 2>/dev/null || true
+        info "NVIDIA GPU: prefer maximum performance"
+    fi
+    
+    # Intel GPU
+    if lspci | grep -qi "intel.*graphics"; then
+        info "Intel GPU: zaten optimize (power-profiles-daemon kullanılıyor)"
+    fi
+}
+
+restore_defaults() {
+    info "Varsayılan ayarlara dönülüyor..."
+    
+    # CPU governor restore
+    if [ -f /tmp/cpu_governor_backup ]; then
+        OLD_GOV=$(cat /tmp/cpu_governor_backup)
+        for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+            echo "$OLD_GOV" | sudo tee "$cpu" > /dev/null 2>&1 || true
+        done
+        rm /tmp/cpu_governor_backup
+        info "CPU governor: $OLD_GOV"
+    fi
+    
+    # Swappiness restore
+    if [ -f /tmp/swappiness_backup ]; then
+        OLD_SWAPPINESS=$(cat /tmp/swappiness_backup)
+        echo "vm.swappiness=$OLD_SWAPPINESS" | sudo tee /etc/sysctl.d/98-swappiness.conf > /dev/null
+        sudo sysctl -p /etc/sysctl.d/98-swappiness.conf > /dev/null 2>&1
+        rm /tmp/swappiness_backup
+        info "Swappiness: $OLD_SWAPPINESS"
+    fi
+    
+    # Kernel parametreleri temizle
+    sudo rm -f /etc/sysctl.d/99-gaming.conf
+    sudo sysctl --system > /dev/null 2>&1
+    info "Kernel parametreleri varsayılana döndü"
+}
+
+case "$CHOICE" in
+    1) optimize_cpu ;;
+    2) optimize_kernel ;;
+    3) optimize_swappiness ;;
+    4) optimize_io ;;
+    5) optimize_gpu ;;
+    6)
+        optimize_cpu
+        optimize_kernel
+        optimize_swappiness
+        optimize_io
+        optimize_gpu
+        ;;
+    0) restore_defaults ;;
+    *)
+        echo "Geçersiz seçim!"
+        exit 1
+        ;;
+esac
+
+echo -e "\n${GREEN}✓ Optimizasyon tamamlandı!${NC}"
+echo -e "Varsayılana dönmek için: ${CYAN}gaming-optimizer restore${NC}\n"
