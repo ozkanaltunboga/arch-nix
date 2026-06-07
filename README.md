@@ -1,12 +1,16 @@
 # Arch / CachyOS / EndeavourOS Hyprland Dotfiles
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-Arch%20Linux-blue)](https://archlinux.org/)
+[![Wayland](https://img.shields.io/badge/Wayland-Hyprland-purple)](https://hyprland.org/)
+
 Mevcut Arch tabanlı bir sistem üzerine tek komutla tam masaüstü kurulumu yapar. Tüm yapılandırma dosyaları doğrudan `config/` altından yönetilir.
 
 > **Uyarı:** Bu script bir işletim sistemi kurmaz. Daha önce kurulmuş Arch tabanlı bir sistem üzerinde çalıştırılmalıdır.
 
 Kurulum, [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots) reposundan ilham alınarak özelleştirilmiştir.
 
-## Kurulum
+## 🚀 Kurulum
 
 Minimal Arch / CachyOS / EndeavourOS kurulumundan sonra normal kullanıcı ile çalıştırın:
 
@@ -18,18 +22,56 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 
 > **Yedekleme:** Mevcut `~/.config` içeriği otomatik olarak `~/.config-backup-<zaman_damgasi>` altına yedeklenir.
 
-## Özellikler
+## ✨ Özellikler
 
-- **Otomatik donanım algılama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
-- **VM desteği** - Sanal makinelerde software rendering otomatik aktif
+### 🖥️ Masaüstü Ortamı
+- **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
 - **Quickshell widget'ları** - Saat, takvim, hava durumu, müzik, bluetooth, ses, wallpaper seçici
-- **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
-- **VM guest tools** - VMware, VirtualBox ve QEMU/SPICE guest araçları VM tipine göre kurulur
 - **macOS/Mojave tarzı dock** - `nwg-dock-hyprland` ile altta ortalı, auto-hide dock
 - **Modern login/lock ekranı** - SDDM Sugar Candy, Hyprlock ve wlogout entegrasyonu
 - **SDDM** - Wayland display manager otomatik kurulum
-- **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
+- **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
 - **Türkçe Q klavye** - Varsayılan olarak ayarlı
+
+### 🔒 Güvenlik
+- **UFW Firewall** - Varsayılan deny incoming, SSH izinli
+- **fail2ban** - SSH brute-force koruması (24 saat ban)
+- **Otomatik güvenlik güncellemeleri** - Haftalık pacman güncellemesi
+
+### ⚡ Sistem Sağlığı & Performans
+- **zram** - RAM sıkıştırma (performans artışı)
+- **earlyoom** - Out-of-memory killer (sistem çökmesini önler)
+- **Otomatik temizlik** - Aylık pacman cache temizliği (son 2 versiyon)
+- **Journal boyut limiti** - 500MB / 1 ay
+- **VA-API** - Hardware video acceleration (Intel iHD / AMD radeonsi)
+- **preload** - Sık kullanılan uygulamaları önceden yükle
+- **profile-sync-daemon** - Browser profile'ları RAM'e taşı
+- **Plymouth** - Boot splash animasyonu
+
+### 🎮 Gaming
+- **Steam** + Proton (Windows oyunları çalıştırma)
+- **Lutris** + **Heroic** (Epic Games, GOG)
+- **MangoHud** (FPS overlay, F12 ile toggle)
+- **GameMode** (otomatik CPU/GPU optimizasyonu)
+- **GameScope** (düşük input lag micro-compositor)
+- **DXVK** + **VKD3D-Proton** (DirectX → Vulkan)
+- **32-bit kütüphaneler** (eski oyunlar için)
+- **Controller desteği** (Xbox, PlayStation, Steam Controller)
+
+### 💻 Developer Araçları
+- **Node.js** - nvm ile version management + LTS kurulumu
+- **Python** - pyenv ile version management + 3.12 kurulumu
+- **Rust** - rustup ile stable + rustfmt, clippy, rust-analyzer
+- **Go** - GOPATH setup + gopls, delve araçları
+- **Neovim** - lazy.nvim ile plugin yönetimi, LSP, treesitter
+
+### 🔄 Senkronizasyon
+- **Syncthing** - Cross-machine dosya senkronizasyonu (http://localhost:8384)
+
+### 🔧 Donanım Desteği
+- **Otomatik donanım algılama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
+- **VM desteği** - Sanal makinelerde software rendering otomatik aktif
+- **VM guest tools** - VMware, VirtualBox ve QEMU/SPICE guest araçları VM tipine göre kurulur
 
 ## Dahil Olan Uygulamalar
 
@@ -113,7 +155,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 | Ses tuşları | Ses aç/kapa/kıs |
 | Parlaklık tuşları | Parlaklık ayarı |
 
-## Ekran Görüntüleri
+## 📸 Ekran Görüntüleri
 
 ![preview1](previews/screenshot1.png)
 ![preview2](previews/screenshot2.png)
@@ -126,19 +168,23 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 ![preview9](previews/screenshot9.png)
 ![preview3](previews/screenshot3.png)
 
-## Gaming
+## 🎮 Gaming
 
 Sistem, Linux'ta oyun oynamak için tam donanımlı olarak yapılandırılır:
 
+### Gaming Paketleri
 - **Steam** + Proton (Windows oyunları çalıştırma)
 - **Lutris** + **Heroic** (Epic Games, GOG)
 - **MangoHud** (FPS overlay, F12 ile toggle)
 - **GameMode** (otomatik CPU/GPU optimizasyonu)
 - **GameScope** (düşük input lag micro-compositor)
 - **DXVK** + **VKD3D-Proton** (DirectX → Vulkan)
-- **32-bit kütüphaneler** (eski oyunlar için)
+- **Wine-staging** (Windows uygulama çalıştırma)
+- **ProtonUp-Qt** (Proton versiyon yönetimi)
+- **32-bit kütüphaneler** (40+ paket, eski oyunlar için)
 - **Controller desteği** (Xbox, PlayStation, Steam Controller)
 
+### Gaming Optimizasyonları
 ```bash
 # Gaming optimizasyonlarını uygula
 gaming-optimizer
@@ -150,20 +196,82 @@ MANGOHUD=1 gamemoderun steam
 gaming-optimizer restore
 ```
 
+### Steam Launch Options
+```bash
+# MangoHud + GameMode
+MANGOHUD=1 gamemoderun %command%
+
+# GameScope ile (düşük input lag)
+gamescope -W 1920 -H 1080 -f -- %command%
+
+# Tam optimizasyon
+MANGOHUD=1 gamemoderun gamescope -W 1920 -H 1080 -f -- %command%
+```
+
 Detaylı bilgi için: [docs/gaming.md](docs/gaming.md)
 
-## Yardımcı Araçlar
+## 🛠️ Yardımcı Araçlar
 
 | Komut | İşlev |
 |-------|-------|
-| `gaming-optimizer` | Oyun için sistem optimizasyonları |
+| `gaming-optimizer` | Oyun için sistem optimizasyonları (CPU/GPU/kernel/IO) |
 | `system-cleanup` | Sistem temizliği (cache, log, orphan paketler) |
 | `runtime-installer` | Node.js/Python/Rust/Go kurulumu |
-| `ssh-keygen-helper` | İnteraktif SSH key oluşturma |
+| `ssh-keygen-helper` | İnteraktif SSH key oluşturma (Ed25519/RSA) |
 | `fetch` | Matugen renkleriyle sistem bilgisi |
-| `qcopy` | fzf ile dosya seç, panoya kopyala |
+| `qcopy` | fzf ile dosya seç, panoya kopyala (LLM'ye yapıştırma için) |
+| `pasteimg` | Panodan görüntüyü dosyaya kaydet |
 
-## Krediler
+### Zsh Aliases
+```bash
+edit          # Neovim'i sudo ile aç
+update        # Sistem güncellemesi (paru -Syu)
+stop          # Sistemi kapat
+out           # Oturumu sonlandır
+edconf        # Hyprland config'i düzenle
+edinstall     # Install script'i düzenle
+gitavail      # SSH key ekle
+```
+
+## 📚 Dokümantasyon
+
+Detaylı dokümantasyon `docs/` dizininde:
+
+- **[troubleshooting.md](docs/troubleshooting.md)** - Yaygın sorunlar ve çözümler
+- **[customization.md](docs/customization.md)** - Tema, widget, Hyprland, Rofi, Zsh, Neovim özelleştirme
+- **[update-guide.md](docs/update-guide.md)** - Güvenli güncelleme, rollback, kernel değişikliği
+- **[gaming.md](docs/gaming.md)** - Gaming kurulumu, optimizasyonlar, sorun giderme
+- **[keyboard-shortcuts.md](docs/keyboard-shortcuts.md)** - Tüm kısayollar (printable)
+
+Kurulum sonrası dokümantasyon `~/Documents/arch-nix-docs/` dizinine kopyalanır.
+
+## 🙏 Krediler
 
 - Orijinal dotfiles: [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots)
 - Fork ve özelleştirme: [ozkanaltunboga](https://github.com/ozkanaltunboga)
+
+## 📄 Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+## 🤝 Katkıda Bulunma
+
+Katkılarınızı bekliyoruz! Lütfen şu adımları izleyin:
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'feat: add amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
+5. Pull Request açın
+
+## 🐛 Sorun Bildirme
+
+Bir sorun bulursanız lütfen [GitHub Issues](https://github.com/ozkanaltunboga/arch-nix/issues) üzerinden bildirin.
+
+## ⭐ Star History
+
+Bu projeyi beğendiyseniz star vermeyi unutmayın!
+
+---
+
+**Not:** Bu script Arch Linux ve türevleri (CachyOS, EndeavourOS) için tasarlanmıştır. Diğer dağıtımlarda çalışmayabilir.
