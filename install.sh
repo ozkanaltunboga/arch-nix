@@ -341,8 +341,6 @@ AUR_PKGS=(
 
     # Developer araçlar
     nvm
-    nil
-    preload
 
     # Tema
     adw-gtk-theme
@@ -482,10 +480,8 @@ deploy "$REPO_DIR/config/programs/firefox/chrome" "$TARGET_CONFIG/firefox-chrome
 FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1)"
 if [ -z "$FIREFOX_PROFILE_DIR" ] && command -v firefox &>/dev/null; then
     info "Firefox profili bulunamadı, oluşturuluyor..."
-    mkdir -p "$HOME/.mozilla/firefox"
-    firefox --headless --createprofile "default $HOME/.mozilla/firefox/default.default" 2>/dev/null || {
-        mkdir -p "$HOME/.mozilla/firefox/default.default/chrome"
-        cat <<'PROFEOF' > "$HOME/.mozilla/firefox/profiles.ini"
+    mkdir -p "$HOME/.mozilla/firefox/default.default/chrome"
+    cat <<'PROFEOF' > "$HOME/.mozilla/firefox/profiles.ini"
 [Install1F42C14737C08049]
 Default=default.default
 Locked=1
@@ -500,7 +496,6 @@ Default=1
 StartWithLastProfile=1
 Version=2
 PROFEOF
-    }
     FIREFOX_PROFILE_DIR="$HOME/.mozilla/firefox/default.default"
 fi
 if [ -n "$FIREFOX_PROFILE_DIR" ]; then
