@@ -158,7 +158,7 @@ PACMAN_PKGS=(
 
     # Geliştirici araçlar
     fastfetch grim slurp swappy playerctl imagemagick
-    ripgrep fd lua-language-server pyright nil
+    ripgrep fd lua-language-server pyright
     wmctrl qbittorrent
 
     # Wayland / Masaüstü
@@ -214,7 +214,7 @@ PACMAN_PKGS=(
     zram-generator earlyoom pacman-contrib
 
     # Performans
-    libva-utils preload profile-sync-daemon plymouth
+    libva-utils profile-sync-daemon plymouth
 
     # Developer runtime'lar
     nodejs npm go rustup pyenv
@@ -226,7 +226,7 @@ PACMAN_PKGS=(
     noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation ttf-jetbrains-mono
 
     # Cursor tema
-    xcursor-breeze
+    breeze
 
     # SDDM
     sddm
@@ -341,6 +341,8 @@ AUR_PKGS=(
 
     # Developer araçlar
     nvm
+    nil
+    preload
 
     # Tema
     adw-gtk-theme
@@ -1064,8 +1066,10 @@ fi
 step "Performans optimizasyonları"
 
 # preload (sık kullanılan uygulamaları önceden yükle)
-sudo systemctl enable --now preload
-info "preload aktif (uygulama önyükleme)"
+if command -v preload &>/dev/null; then
+    sudo systemctl enable --now preload
+    info "preload aktif (uygulama önyükleme)"
+fi
 
 # profile-sync-daemon (browser profile'ları RAM'e taşı)
 mkdir -p "$HOME/.config/psd"
