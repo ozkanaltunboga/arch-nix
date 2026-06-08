@@ -675,6 +675,11 @@ fi
 # ============================================================
 step "Sistem servisleri etkinleştiriliyor"
 
+for svc in systemd-networkd systemd-networkd-wait-online iwd dhcpcd wpa_supplicant; do
+    sudo systemctl disable --now "$svc" 2>/dev/null || true
+done
+info "NetworkManager dışındaki ağ yöneticileri devre dışı bırakıldı"
+
 sudo systemctl enable --now NetworkManager
 sudo systemctl enable --now bluetooth
 sudo systemctl enable --now cups
