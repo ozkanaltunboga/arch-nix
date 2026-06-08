@@ -3,6 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-Arch%20Linux-blue)](https://archlinux.org/)
 [![Wayland](https://img.shields.io/badge/Wayland-Hyprland-purple)](https://hyprland.org/)
+[![Shell](https://img.shields.io/badge/Shell-Zsh-orange)](https://www.zsh.org/)
+[![AUR](https://img.shields.io/badge/AUR-paru-green)](https://aur.archlinux.org/packages/paru)
 
 Mevcut Arch tabanlı bir sistem üzerine tek komutla tam masaüstü kurulumu yapar. Tüm yapılandırma dosyaları doğrudan `config/` altından yönetilir.
 
@@ -10,7 +12,7 @@ Mevcut Arch tabanlı bir sistem üzerine tek komutla tam masaüstü kurulumu yap
 
 Kurulum, [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots) reposundan ilham alınarak özelleştirilmiştir.
 
-## 🚀 Kurulum
+## Kurulum
 
 Minimal Arch / CachyOS / EndeavourOS kurulumundan sonra normal kullanıcı ile çalıştırın:
 
@@ -22,9 +24,9 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 
 > **Yedekleme:** Mevcut `~/.config` içeriği otomatik olarak `~/.config-backup-<zaman_damgasi>` altına yedeklenir.
 
-## ✨ Özellikler
+## Özellikler
 
-### 🖥️ Masaüstü Ortamı
+### Masaüstü Ortamı
 - **Hyprland** - Wayland compositor, animasyonlar, workspace'ler
 - **Quickshell widget'ları** - Saat, takvim, hava durumu, müzik, bluetooth, ses, wallpaper seçici
 - **macOS/Mojave tarzı dock** - `nwg-dock-hyprland` ile altta ortalı, auto-hide dock
@@ -33,13 +35,13 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 - **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
 - **Türkçe Q klavye** - Varsayılan olarak ayarlı
 
-### 🔒 Güvenlik
+### Güvenlik
 - **UFW Firewall** - Varsayılan deny incoming, SSH izinli
 - **fail2ban** - SSH brute-force koruması (24 saat ban)
 - **Otomatik güvenlik güncellemeleri** - Haftalık pacman güncellemesi
 
-### ⚡ Sistem Sağlığı & Performans
-- **zram** - RAM sıkıştırma (performans artışı)
+### Sistem Sağlığı & Performans
+- **zram-generator** - RAM sıkıştırma (performans artışı)
 - **earlyoom** - Out-of-memory killer (sistem çökmesini önler)
 - **Otomatik temizlik** - Aylık pacman cache temizliği (son 2 versiyon)
 - **Journal boyut limiti** - 500MB / 1 ay
@@ -48,27 +50,27 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 - **profile-sync-daemon** - Browser profile'ları RAM'e taşı
 - **Plymouth** - Boot splash animasyonu
 
-### 🎮 Gaming
+### Gaming
 - **Steam** + Proton (Windows oyunları çalıştırma)
 - **Lutris** + **Heroic** (Epic Games, GOG)
 - **MangoHud** (FPS overlay, F12 ile toggle)
 - **GameMode** (otomatik CPU/GPU optimizasyonu)
 - **GameScope** (düşük input lag micro-compositor)
-- **DXVK** + **VKD3D-Proton** (DirectX → Vulkan)
+- **DXVK** + **VKD3D-Proton** (DirectX -> Vulkan)
 - **32-bit kütüphaneler** (eski oyunlar için)
 - **Controller desteği** (Xbox, PlayStation, Steam Controller)
 
-### 💻 Developer Araçları
+### Developer Araçları
 - **Node.js** - nvm ile version management + LTS kurulumu
 - **Python** - pyenv ile version management + 3.12 kurulumu
 - **Rust** - rustup ile stable + rustfmt, clippy, rust-analyzer
 - **Go** - GOPATH setup + gopls, delve araçları
 - **Neovim** - lazy.nvim ile plugin yönetimi, LSP, treesitter
 
-### 🔄 Senkronizasyon
+### Senkronizasyon
 - **Syncthing** - Cross-machine dosya senkronizasyonu (http://localhost:8384)
 
-### 🔧 Donanım Desteği
+### Donanım Desteği
 - **Otomatik donanım algılama** - VM (VMware/VirtualBox), NVIDIA, AMD, Intel GPU otomatik tespit
 - **VM desteği** - Sanal makinelerde software rendering otomatik aktif
 - **VM guest tools** - VMware, VirtualBox ve QEMU/SPICE guest araçları VM tipine göre kurulur
@@ -81,12 +83,12 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 | Tarayıcı | Firefox, Google Chrome |
 | Editörler | Neovim, VS Code |
 | İletişim | Telegram, Discord |
-| Notlar | Obsidian, Notion |
+| Notlar | Notion |
 | Medya | OBS Studio, MPV, Spotify, Cava |
 | Ofis | LibreOffice |
 | Geliştirici | Docker, Lazygit, IntelliJ IDEA, Codex, Node.js, Python, Rust, Go |
 | Sanallaştırma | KVM/QEMU (virt-manager) |
-| Ağ Araçları | Wireshark, Nmap, Traceroute, MTR, Bandwhich |
+| Ağ Araçları | Nmap, Traceroute, MTR, Bandwhich |
 | CLI Araçları | btop, bat, zoxide, duf, ncdu, fzf, ripgrep |
 | Sistem | Timeshift, Flatpak, Bottles, Syncthing |
 | Gaming | Steam, Lutris, Heroic, ProtonUp-Qt, MangoHud, GameMode, GameScope |
@@ -155,7 +157,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 | Ses tuşları | Ses aç/kapa/kıs |
 | Parlaklık tuşları | Parlaklık ayarı |
 
-## 📸 Ekran Görüntüleri
+## Ekran Görüntüleri
 
 ![preview1](previews/screenshot1.png)
 ![preview2](previews/screenshot2.png)
@@ -168,7 +170,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 ![preview9](previews/screenshot9.png)
 ![preview3](previews/screenshot3.png)
 
-## 🎮 Gaming
+## Gaming
 
 Sistem, Linux'ta oyun oynamak için tam donanımlı olarak yapılandırılır:
 
@@ -178,7 +180,7 @@ Sistem, Linux'ta oyun oynamak için tam donanımlı olarak yapılandırılır:
 - **MangoHud** (FPS overlay, F12 ile toggle)
 - **GameMode** (otomatik CPU/GPU optimizasyonu)
 - **GameScope** (düşük input lag micro-compositor)
-- **DXVK** + **VKD3D-Proton** (DirectX → Vulkan)
+- **DXVK** + **VKD3D-Proton** (DirectX -> Vulkan)
 - **Wine-staging** (Windows uygulama çalıştırma)
 - **ProtonUp-Qt** (Proton versiyon yönetimi)
 - **32-bit kütüphaneler** (40+ paket, eski oyunlar için)
@@ -210,7 +212,7 @@ MANGOHUD=1 gamemoderun gamescope -W 1920 -H 1080 -f -- %command%
 
 Detaylı bilgi için: [docs/gaming.md](docs/gaming.md)
 
-## 🛠️ Yardımcı Araçlar
+## Yardımcı Araçlar
 
 | Komut | İşlev |
 |-------|-------|
@@ -233,7 +235,7 @@ edinstall     # Install script'i düzenle
 gitavail      # SSH key ekle
 ```
 
-## 📚 Dokümantasyon
+## Dokümantasyon
 
 Detaylı dokümantasyon `docs/` dizininde:
 
@@ -245,16 +247,16 @@ Detaylı dokümantasyon `docs/` dizininde:
 
 Kurulum sonrası dokümantasyon `~/Documents/arch-nix-docs/` dizinine kopyalanır.
 
-## 🙏 Krediler
+## Krediler
 
 - Orijinal dotfiles: [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots)
 - Fork ve özelleştirme: [ozkanaltunboga](https://github.com/ozkanaltunboga)
 
-## 📄 Lisans
+## Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
-## 🤝 Katkıda Bulunma
+## Katkıda Bulunma
 
 Katkılarınızı bekliyoruz! Lütfen şu adımları izleyin:
 
@@ -264,13 +266,9 @@ Katkılarınızı bekliyoruz! Lütfen şu adımları izleyin:
 4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
 5. Pull Request açın
 
-## 🐛 Sorun Bildirme
+## Sorun Bildirme
 
 Bir sorun bulursanız lütfen [GitHub Issues](https://github.com/ozkanaltunboga/arch-nix/issues) üzerinden bildirin.
-
-## ⭐ Star History
-
-Bu projeyi beğendiyseniz star vermeyi unutmayın!
 
 ---
 

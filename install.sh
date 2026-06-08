@@ -151,7 +151,7 @@ PACMAN_PKGS=(
     firefox telegram-desktop
 
     # Ofis & not
-    hunspell hunspell-en_us obsidian
+    hunspell hunspell-en_us
 
     # Media
     obs-studio p7zip mpv
@@ -159,7 +159,7 @@ PACMAN_PKGS=(
     # Geliştirici araçlar
     fastfetch grim slurp swappy playerctl imagemagick
     ripgrep fd lua-language-server pyright nil
-    jdk8-openjdk wmctrl qbittorrent
+    wmctrl qbittorrent
 
     # Wayland / Masaüstü
     hyprland xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
@@ -177,7 +177,7 @@ PACMAN_PKGS=(
     qt6-wayland qt6-multimedia qt6-multimedia-ffmpeg qt6-5compat qt6-websockets qt6ct
 
     # Ses
-    pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber
+    pipewire pipewire-alsa pipewire-pulse wireplumber
     easyeffects ladspa lsp-plugins-ladspa lsp-plugins-lv2 libpulse
 
     # Bluetooth & ağ
@@ -196,7 +196,7 @@ PACMAN_PKGS=(
     docker docker-compose
 
     # Ağ araçları
-    nmap traceroute wireshark-qt mtr bandwhich
+    nmap traceroute mtr bandwhich
 
     # Modern CLI araçlar
     zoxide bat duf ncdu lazygit rsync tmux speedtest-cli
@@ -300,13 +300,11 @@ if [[ "$IS_VM" == false ]]; then
         lib32-libgcrypt
         
         # Controller desteği
-        xboxdrv
         steam-devices
         
         # Gaming araçları
         mangohud
         lib32-mangohud
-        goverlay
         gamescope
         vkbasalt
         lib32-vkbasalt
@@ -328,7 +326,6 @@ AUR_PKGS=(
     # Quickshell & Hyprland bileşenleri
     quickshell-git
     matugen-bin
-    satty
     swww
     awww
     mpvpaper
