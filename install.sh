@@ -736,7 +736,7 @@ systemctl --user enable swayosd.service 2>/dev/null || true
 info "SwayOSD servisi yapılandırıldı"
 
 # Kullanıcı grupları
-for grp in NetworkManager wheel video libvirt docker wireshark; do
+for grp in network wheel video libvirt docker; do
     sudo usermod -aG "$grp" "$USER" 2>/dev/null || warn "Grup bulunamadı: $grp"
 done
 info "Kullanıcı grupları güncellendi"
