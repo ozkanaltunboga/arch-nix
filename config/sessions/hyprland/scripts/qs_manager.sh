@@ -144,6 +144,7 @@ launch_quickshell() {
         "XDG_RUNTIME_DIR=$runtime_dir"
         "DBUS_SESSION_BUS_ADDRESS=$dbus_addr"
         "QT_QPA_PLATFORM=wayland"
+        "WALLPAPER_DIR=$SRC_DIR"
     )
 
     [[ -n "$wayland_display" ]] && launch_env+=("WAYLAND_DISPLAY=$wayland_display")

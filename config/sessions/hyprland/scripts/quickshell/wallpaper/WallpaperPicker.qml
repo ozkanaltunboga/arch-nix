@@ -487,10 +487,11 @@ Item {
         view.forceActiveFocus();
     }
 
-    readonly property string homeDir: "file://" + Quickshell.env("HOME")
+    readonly property string homePath: Quickshell.env("HOME")
+    readonly property string homeDir: "file://" + homePath
     readonly property string thumbDir: homeDir + "/.cache/wallpaper_picker/thumbs"
     readonly property string searchDir: homeDir + "/.cache/wallpaper_picker/search_thumbs"
-    readonly property string srcDir: Quickshell.env("WALLPAPER_DIR")
+    readonly property string srcDir: Quickshell.env("WALLPAPER_DIR") !== "" ? Quickshell.env("WALLPAPER_DIR") : homePath + "/Pictures/Wallpapers"
 
     readonly property var transitions: ["grow", "outer", "any", "wipe", "wave", "pixel", "center"]
 
