@@ -217,7 +217,7 @@ PACMAN_PKGS=(
     libva-utils profile-sync-daemon plymouth
 
     # Developer runtime'lar
-    nodejs npm go rustup pyenv
+    nodejs npm go pyenv
 
     # Senkronizasyon
     syncthing
@@ -1159,6 +1159,16 @@ fi
 # Rust (rustup ile)
 if command -v rustup &>/dev/null; then
     rustup default stable || warn "Rust stable kurulamadı"
+    info "Rust stable kuruldu (rustup ile)"
+elif pacman -Q rust &>/dev/null; then
+    info "pacman rust paketi bulundu, rustup'a geçiş yapılıyor..."
+    sudo pacman -Rns rust --noconfirm || warn "rust kaldırılamadı"
+    sudo pacman -S --needed --noconfirm rustup || warn "rustup kurulamadı"
+    rustup default stable || warn "Rust stable kurulamadı"
+    info "Rust stable kuruldu (rustup ile)"
+else
+    sudo pacman -S --needed --noconfirm rustup || warn "rustup kurulamadı"
+    rustup default stable 2>/dev/null || warn "Rust stable kurulamadı"
     info "Rust stable kuruldu (rustup ile)"
 fi
 
