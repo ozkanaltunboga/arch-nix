@@ -2,7 +2,7 @@
 # ============================================================
 #   Arch Linux / CachyOS - Tek Komutla Tam Kurulum
 # ============================================================
-set -e
+set -eo pipefail
 
 # --- Renkler ---
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -19,10 +19,10 @@ step()  { echo -e "\n${BOLD}${CYAN}━━━ $* ━━━${NC}"; }
 sudo -v || error "sudo yetkisi alınamadı"
 (while true; do sudo -n true; sleep 50; done) 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
-trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null' EXIT
+trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null; echo -e "\n${RED}[HATA]${NC} Kurulum sırasında bir hata oluştu (satır $LINENO). Detay için yukarıdaki çıktıyı kontrol edin." >&2' EXIT
 
 # Minimal kurulumlarda donanım algılama araçları eksik olabilir.
-sudo pacman -S --needed --noconfirm pciutils iw
+sudo pacman -S --needed --noconfirm pciutils iw || error "pciutils/iw kurulamadı (donanım algılama için gerekli)"
 
 # ============================================================
 # 0. DONANIM ALGILAMA
@@ -93,11 +93,11 @@ elif command -v yay &>/dev/null; then
     AUR_CMD="yay -S --needed --noconfirm"
 else
     info "paru kuruluyor..."
-    sudo pacman -S --needed --noconfirm git base-devel cargo
+    sudo pacman -S --needed --noconfirm git base-devel cargo || error "base-devel/cargo kurulamadı"
     local_tmp=$(mktemp -d)
-    git clone https://aur.archlinux.org/paru.git "$local_tmp/paru"
+    git clone https://aur.archlinux.org/paru.git "$local_tmp/paru" || error "paru clone başarısız"
     sudo -v
-    (cd "$local_tmp/paru" && makepkg -si --noconfirm)
+    (cd "$local_tmp/paru" && makepkg -si --noconfirm) || error "paru derlenemedi"
     rm -rf "$local_tmp"
     AUR_CMD="paru -S --needed --noconfirm"
 fi
@@ -211,7 +211,7 @@ PACMAN_PKGS=(
     ufw fail2ban
 
     # Sistem sağlığı
-    zram earlyoom pacman-contrib
+    zram-generator earlyoom pacman-contrib
 
     # Performans
     libva-utils preload profile-sync-daemon plymouth
@@ -354,9 +354,7 @@ AUR_PKGS=(
     # Uygulamalar
     visual-studio-code-bin
     google-chrome
-    acestream-engine
     notion-app-electron
-    openai-codex
     spotify
     timeshift
     bottles
@@ -389,7 +387,9 @@ fi
 # 4. PAKET KURULUMU
 # ============================================================
 step "Pacman paketleri kuruluyor"
-sudo pacman -S --needed --noconfirm "${PACMAN_PKGS[@]}"
+if ! sudo pacman -S --needed --noconfirm "${PACMAN_PKGS[@]}"; then
+    error "Pacman paketleri kurulamadı. Yukarıdaki hata mesajını kontrol edin."
+fi
 
 step "AUR paketleri kuruluyor"
 $AUR_CMD "${AUR_PKGS[@]}" || warn "Bazı AUR paketleri kurulamadı, devam ediliyor..."
@@ -430,6 +430,10 @@ deploy() {
         return 0
     fi
     if [ -e "$dst" ]; then
+        if diff -rq "$src" "$dst" >/dev/null 2>&1; then
+            info "Değişiklik yok, atlanıyor: $dst"
+            return 0
+        fi
         mv "$dst" "$BACKUP_DIR/$(basename "$dst")-$(date +%s)"
         info "Yedeklendi: $dst"
     fi
@@ -474,19 +478,40 @@ fi
 # Cava: config_base
 deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
 
-# Zsh
-deploy "$REPO_DIR/config/programs/zsh" "$TARGET_CONFIG/zsh"
-deploy "$REPO_DIR/config/programs/zsh/.zshrc" "$HOME/.zshrc"
-
 # Firefox chrome (fallback to ~/.config/firefox-chrome if profile not found)
-FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1)"
 deploy "$REPO_DIR/config/programs/firefox/chrome" "$TARGET_CONFIG/firefox-chrome"
+FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1)"
+if [ -z "$FIREFOX_PROFILE_DIR" ] && command -v firefox &>/dev/null; then
+    info "Firefox profili bulunamadı, oluşturuluyor..."
+    mkdir -p "$HOME/.mozilla/firefox"
+    firefox --headless --createprofile "default $HOME/.mozilla/firefox/default.default" 2>/dev/null || {
+        mkdir -p "$HOME/.mozilla/firefox/default.default/chrome"
+        cat <<'PROFEOF' > "$HOME/.mozilla/firefox/profiles.ini"
+[Install1F42C14737C08049]
+Default=default.default
+Locked=1
+
+[Profile0]
+Name=default
+IsRelative=1
+Path=default.default
+Default=1
+
+[General]
+StartWithLastProfile=1
+Version=2
+PROFEOF
+    }
+    FIREFOX_PROFILE_DIR="$HOME/.mozilla/firefox/default.default"
+fi
 if [ -n "$FIREFOX_PROFILE_DIR" ]; then
     deploy "$REPO_DIR/config/programs/firefox/chrome" "$FIREFOX_PROFILE_DIR/chrome"
-    # Sync matugen outputs to profile as well
     if [ -d "$TARGET_CONFIG/firefox-chrome" ]; then
         cp -r "$TARGET_CONFIG/firefox-chrome/." "$FIREFOX_PROFILE_DIR/chrome/" 2>/dev/null || true
     fi
+    info "Firefox chrome temaları profile uygulandı"
+else
+    warn "Firefox profili oluşturulamadı. İlk çalıştırmada chrome dosyalarını ~/.config/firefox-chrome'dan kopyalayın."
 fi
 
 # --- Wallpaper kurulumu ---
@@ -618,17 +643,26 @@ ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 [[ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]] && \
     git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 
-# .zshrc alias restore
+# .zshrc alias restore (deploy'dan önce alias'ları kaydet)
 ZSH_RC="$HOME/.zshrc"
+SAVED_ALIASES="$HOME/.zshrc.aliases.bak"
 if [ -f "$ZSH_RC" ]; then
-    mkdir -p "$TARGET_CONFIG/zsh"
-    grep "^alias " "$ZSH_RC" > "$TARGET_CONFIG/zsh/user_aliases.zsh" 2>/dev/null || true
+    grep "^alias " "$ZSH_RC" > "$SAVED_ALIASES" 2>/dev/null || true
 fi
-if [ -s "$TARGET_CONFIG/zsh/user_aliases.zsh" ]; then
-    if ! grep -q "source $TARGET_CONFIG/zsh/user_aliases.zsh" "$ZSH_RC" 2>/dev/null; then
-        echo -e "\n# User Aliases" >> "$ZSH_RC"
-        echo "source $TARGET_CONFIG/zsh/user_aliases.zsh" >> "$ZSH_RC"
+
+deploy "$REPO_DIR/config/programs/zsh" "$TARGET_CONFIG/zsh"
+deploy "$REPO_DIR/config/programs/zsh/.zshrc" "$HOME/.zshrc"
+
+# Alias'ları geri yükle
+if [ -f "$SAVED_ALIASES" ] && [ -s "$SAVED_ALIASES" ]; then
+    mkdir -p "$TARGET_CONFIG/zsh"
+    cp "$SAVED_ALIASES" "$TARGET_CONFIG/zsh/user_aliases.zsh"
+    rm -f "$SAVED_ALIASES"
+    if ! grep -q "source $TARGET_CONFIG/zsh/user_aliases.zsh" "$HOME/.zshrc" 2>/dev/null; then
+        echo -e "\n# User Aliases" >> "$HOME/.zshrc"
+        echo "source $TARGET_CONFIG/zsh/user_aliases.zsh" >> "$HOME/.zshrc"
     fi
+    info "Kullanıcı alias'ları korundu"
 fi
 
 if [[ "$SHELL" != "$(which zsh)" ]]; then
@@ -692,7 +726,12 @@ fi
 
 # Pipewire (global - TTY'den çalışsa bile)
 sudo systemctl --global enable pipewire wireplumber pipewire-pulse 2>/dev/null || true
-systemctl --user start pipewire wireplumber pipewire-pulse 2>/dev/null || true
+if [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
+    systemctl --user start pipewire wireplumber pipewire-pulse 2>/dev/null || true
+    info "Pipewire başlatıldı"
+else
+    info "Pipewire enable edildi (ilk login'de başlayacak)"
+fi
 
 # SwayOSD
 sudo systemctl enable --now swayosd-libinput-backend.service 2>/dev/null || true
@@ -964,8 +1003,15 @@ info "Haftalık otomatik güncelleme zamanlandı"
 step "Sistem sağlığı yapılandırılıyor"
 
 # zram (RAM sıkıştırma)
-sudo systemctl enable --now zramd
-info "zram aktif (RAM sıkıştırma)"
+sudo mkdir -p /etc/systemd
+cat <<'EOF' | sudo tee /etc/systemd/zram-generator.conf > /dev/null
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now systemd-zram-setup@zram0.service
+info "zram-generator aktif (RAM sıkıştırma, zstd, RAM/2)"
 
 # earlyoom (out-of-memory killer)
 sudo systemctl enable --now earlyoom
@@ -1007,7 +1053,13 @@ sudo systemctl restart systemd-journald
 info "Journal boyut limiti: 500MB / 1 ay"
 
 # Orphan paket temizliği
-sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || info "Orphan paket yok"
+ORPHANS=$(pacman -Qtdq 2>/dev/null || true)
+if [ -n "$ORPHANS" ]; then
+    sudo pacman -Rns $ORPHANS 2>/dev/null || warn "Orphan paketler kaldırılamadı"
+    info "Orphan paketler temizlendi"
+else
+    info "Orphan paket yok"
+fi
 
 # ============================================================
 # 18. PERFORMANS OPTIMIZASYONLARI
@@ -1024,8 +1076,13 @@ cat <<'EOF' > "$HOME/.config/psd/psd.conf"
 USE_OVERLAYFS="yes"
 BROWSERS="firefox chromium google-chrome"
 EOF
-systemctl --user enable --now psd
-info "profile-sync-daemon aktif (browser RAM cache)"
+if [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
+    systemctl --user enable --now psd 2>/dev/null || true
+    info "profile-sync-daemon aktif (browser RAM cache)"
+else
+    systemctl --user enable psd 2>/dev/null || true
+    info "profile-sync-daemon enable edildi (ilk login'de başlayacak)"
+fi
 
 # VA-API yapılandırması
 if [[ "$IS_INTEL" == true ]]; then
@@ -1055,21 +1112,37 @@ fi
 step "Developer runtime'lar yapılandırılıyor"
 
 # Node.js (nvm ile version management)
-if command -v nvm &>/dev/null; then
-    nvm install --lts
-    nvm use --lts
-    info "Node.js LTS kuruldu (nvm ile)"
-else
-    info "Node.js pacman'dan kuruldu"
+export NVM_DIR="$HOME/.nvm"
+if [ -s "/usr/share/nvm/nvm.sh" ]; then
+    source /usr/share/nvm/nvm.sh
+    nvm install --lts || warn "Node.js LTS kurulamadı"
+    nvm use --lts 2>/dev/null || true
+    nvm alias default lts/* 2>/dev/null || true
+    info "Node.js LTS kuruldu (nvm ile): $(node --version 2>/dev/null || echo 'kuruluyor...')"
+
+    if ! grep -q 'NVM_DIR' "$HOME/.zshrc"; then
+        cat <<'EOF' >> "$HOME/.zshrc"
+
+# nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "/usr/share/nvm/nvm.sh" ] && \. "/usr/share/nvm/nvm.sh"
+[ -s "/usr/share/nvm/bash_completion" ] && \. "/usr/share/nvm/bash_completion"
+EOF
+    fi
+elif command -v node &>/dev/null; then
+    info "Node.js pacman'dan kuruldu: $(node --version)"
 fi
 
 # Python (pyenv ile version management)
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
 if command -v pyenv &>/dev/null; then
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
     pyenv install 3.12.0 2>/dev/null || true
     pyenv global 3.12.0 2>/dev/null || true
     info "Python 3.12 kuruldu (pyenv ile)"
-    
-    # pyenv init ekle
+
     if ! grep -q "pyenv" "$HOME/.zshrc"; then
         cat <<'EOF' >> "$HOME/.zshrc"
 
@@ -1084,7 +1157,7 @@ fi
 
 # Rust (rustup ile)
 if command -v rustup &>/dev/null; then
-    rustup default stable
+    rustup default stable || warn "Rust stable kurulamadı"
     info "Rust stable kuruldu (rustup ile)"
 fi
 
@@ -1100,6 +1173,11 @@ export PATH="$GOPATH/bin:$PATH"
 EOF
     fi
     info "Go yapılandırıldı"
+fi
+
+# OpenAI Codex CLI (npm ile)
+if command -v npm &>/dev/null; then
+    npm install -g @openai/codex 2>/dev/null && info "OpenAI Codex CLI kuruldu" || warn "Codex CLI kurulamadı (API key gerekebilir)"
 fi
 
 # ============================================================
