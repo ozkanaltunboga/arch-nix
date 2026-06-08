@@ -474,6 +474,15 @@ fi
 # Cava: config_base
 deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
 
+# Chrome Wayland flags
+CHROME_FLAGS="$HOME/.config/chrome-flags.conf"
+if command -v google-chrome-stable >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1; then
+    touch "$CHROME_FLAGS"
+    grep -qxF -- "--enable-features=UseOzonePlatform" "$CHROME_FLAGS" 2>/dev/null || echo "--enable-features=UseOzonePlatform" >> "$CHROME_FLAGS"
+    grep -qxF -- "--ozone-platform=wayland" "$CHROME_FLAGS" 2>/dev/null || echo "--ozone-platform=wayland" >> "$CHROME_FLAGS"
+    info "Chrome Wayland flag'leri ayarlandı"
+fi
+
 # Firefox chrome (fallback to ~/.config/firefox-chrome if profile not found)
 deploy "$REPO_DIR/config/programs/firefox/chrome" "$TARGET_CONFIG/firefox-chrome"
 if [ -d "$HOME/.mozilla/firefox" ]; then
