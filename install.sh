@@ -477,26 +477,10 @@ deploy "$REPO_DIR/config/programs/cava/config" "$TARGET_CONFIG/cava/config_base"
 
 # Firefox chrome (fallback to ~/.config/firefox-chrome if profile not found)
 deploy "$REPO_DIR/config/programs/firefox/chrome" "$TARGET_CONFIG/firefox-chrome"
-FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1)"
-if [ -z "$FIREFOX_PROFILE_DIR" ] && command -v firefox &>/dev/null; then
-    info "Firefox profili bulunamadı, oluşturuluyor..."
-    mkdir -p "$HOME/.mozilla/firefox/default.default/chrome"
-    cat <<'PROFEOF' > "$HOME/.mozilla/firefox/profiles.ini"
-[Install1F42C14737C08049]
-Default=default.default
-Locked=1
-
-[Profile0]
-Name=default
-IsRelative=1
-Path=default.default
-Default=1
-
-[General]
-StartWithLastProfile=1
-Version=2
-PROFEOF
-    FIREFOX_PROFILE_DIR="$HOME/.mozilla/firefox/default.default"
+if [ -d "$HOME/.mozilla/firefox" ]; then
+    FIREFOX_PROFILE_DIR="$(find "$HOME/.mozilla/firefox" -maxdepth 1 -name '*.default*' -type d 2>/dev/null | head -n1 || true)"
+else
+    FIREFOX_PROFILE_DIR=""
 fi
 if [ -n "$FIREFOX_PROFILE_DIR" ]; then
     deploy "$REPO_DIR/config/programs/firefox/chrome" "$FIREFOX_PROFILE_DIR/chrome"
@@ -505,7 +489,7 @@ if [ -n "$FIREFOX_PROFILE_DIR" ]; then
     fi
     info "Firefox chrome temaları profile uygulandı"
 else
-    warn "Firefox profili oluşturulamadı. İlk çalıştırmada chrome dosyalarını ~/.config/firefox-chrome'dan kopyalayın."
+    info "Firefox profili bulunamadı. İlk Firefox açılışında chrome temaları ~/.config/firefox-chrome'dan kopyalanacak."
 fi
 
 # --- Wallpaper kurulumu ---
