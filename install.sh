@@ -454,8 +454,7 @@ deploy "$REPO_DIR/config/programs/nwg-dock-hyprland" "$TARGET_CONFIG/nwg-dock-hy
 chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/launch.sh" 2>/dev/null || true
 deploy "$REPO_DIR/config/programs/neovim/nvim" "$TARGET_CONFIG/nvim"
 deploy "$REPO_DIR/config/sessions/hyprland"    "$TARGET_CONFIG/hypr"
-chmod +x "$TARGET_CONFIG/hypr/scripts/lock.sh" 2>/dev/null || true
-chmod +x "$TARGET_CONFIG/hypr/scripts/lockscreen_prepare.sh" 2>/dev/null || true
+find "$TARGET_CONFIG/hypr/scripts" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} + 2>/dev/null || true
 
 # Plymouth deploy
 if [ -d "$REPO_DIR/config/programs/plymouth" ]; then
