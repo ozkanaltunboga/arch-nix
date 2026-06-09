@@ -1,5 +1,4 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import SddmComponents 2.0
 
@@ -49,47 +48,68 @@ Rectangle {
                     color: root.text
                 }
 
-                TextField {
+                Rectangle {
                     id: passwordField
                     width: 280
                     height: 48
-                    placeholderText: "Password"
-                    echoMode: TextInput.Password
-                    font.family: "JetBrains Mono"
-                    font.pixelSize: 14
-                    color: root.text
-                    background: Rectangle {
-                        radius: 12
-                        color: root.surface
-                        border.color: passwordField.focus ? root.primary : "#45475a"
-                        border.width: passwordField.focus ? 2 : 1
+                    radius: 12
+                    color: root.surface
+                    border.color: passwordInput.activeFocus ? root.primary : "#45475a"
+                    border.width: passwordInput.activeFocus ? 2 : 1
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        text: "Password"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 14
+                        color: root.subtext
+                        visible: passwordInput.text.length === 0
                     }
-                    Keys.onReturnPressed: sddm.login(userModel.lastUser, passwordField.text, sessionModel.lastIndex)
+
+                    TextInput {
+                        id: passwordInput
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        verticalAlignment: TextInput.AlignVCenter
+                        echoMode: TextInput.Password
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 14
+                        color: root.text
+                        clip: true
+                        Keys.onReturnPressed: sddm.login(userModel.lastUser, passwordInput.text, sessionModel.lastIndex)
+                    }
                 }
 
-                Button {
+                Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 120
                     height: 40
-                    text: "Login"
-                    font.family: "JetBrains Mono"
-                    font.weight: Font.Bold
-                    contentItem: Text {
-                        text: parent.text
-                        font: parent.font
+                    radius: 10
+                    color: loginArea.containsMouse ? Qt.lighter(root.primary, 1.08) : root.primary
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Login"
+                        font.family: "JetBrains Mono"
+                        font.weight: Font.Bold
+                        font.pixelSize: 14
                         color: root.base
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle {
-                        radius: 10
-                        color: root.primary
+
+                    MouseArea {
+                        id: loginArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sddm.login(userModel.lastUser, passwordInput.text, sessionModel.lastIndex)
                     }
-                    onClicked: sddm.login(userModel.lastUser, passwordField.text, sessionModel.lastIndex)
                 }
             }
         }
     }
 
-    Component.onCompleted: passwordField.forceActiveFocus()
+    Component.onCompleted: passwordInput.forceActiveFocus()
 }
