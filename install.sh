@@ -39,6 +39,7 @@ log_info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $*"; }
 log_step()  { echo -e "\n${BOLD}${CYAN}--- $* ---${NC}"; }
+log_ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
 
 # --- Globals ---
 CURRENT_PHASE="init"
@@ -55,6 +56,18 @@ HAS_WIFI=false
 MULTIBIT_OK=true
 REPO_DIR=""
 BACKUP_DIR=""
+INSTALLED_PACKAGES=()
+FAILED_REQUIRED_PACKAGES=()
+FAILED_OPTIONAL_PACKAGES=()
+SKIPPED_OPTIONAL_PACKAGES=()
+
+remember_unique() {
+    local array_name="$1"
+    local value="$2"
+    local existing
+    eval 'for existing in "${'"$array_name"'[@]}"; do [[ "$existing" == "$value" ]] && return 0; done'
+    eval "$array_name+=(\"\$value\")"
+}
 
 # --- Error Trap ---
 trap '
@@ -63,6 +76,7 @@ trap '
     if [[ $exit_code -ne 0 ]]; then
         echo -e "${RED}[ERROR]${NC} Kurulum basarisiz (faz: $CURRENT_PHASE, satir: $LINENO)" >&3
         echo -e "${RED}[ERROR]${NC} Log dosyasi: $LOG_FILE" >&3
+        declare -f print_package_report >/dev/null && print_package_report >&3
         echo "" >&3
         echo "Son 40 log satiri:" >&3
         tail -40 "$LOG_FILE" >&3 2>/dev/null || true
@@ -111,112 +125,250 @@ pkg_in_repo() { pacman -Si "$1" &>/dev/null; }
 aur_is_installed() { ${AUR_HELPER:-paru} -Qi "$1" &>/dev/null; }
 aur_in_repo() { ${AUR_HELPER:-paru} -Si "$1" &>/dev/null; }
 
-install_pacman_required() {
-    local phase="$1"; shift
-    local pkgs=("$@")
-    local to_install=() not_found=()
+safe_build_jobs() {
+    local jobs
+    jobs="$(nproc 2>/dev/null || echo 2)"
+    jobs=$((jobs / 2))
+    (( jobs < 1 )) && jobs=1
+    (( jobs > 4 )) && jobs=4
+    echo "$jobs"
+}
 
-    for pkg in "${pkgs[@]}"; do
-        if pkg_is_installed "$pkg"; then
-            log_info "$pkg paketi zaten kurulu, atlaniyor."
-        elif pkg_in_repo "$pkg"; then
-            log_info "$pkg paketi kurulu degil, kuruluyor..."
-            to_install+=("$pkg")
-        else
-            not_found+=("$pkg")
+print_package_header() {
+    local pkg="$1"
+    echo ""
+    echo -e "${CYAN}=============================================================${NC}"
+    echo -e "${BOLD}:: Installing $pkg...${NC}"
+    echo -e "${CYAN}=============================================================${NC}"
+}
+
+install_one_pacman_package() {
+    local phase="$1"
+    local pkg="$2"
+    local required="$3"
+
+    if pkg_is_installed "$pkg"; then
+        log_info "$pkg paketi zaten kurulu, atlaniyor."
+        return 0
+    fi
+
+    if ! pkg_in_repo "$pkg"; then
+        if [[ "$required" == "true" ]]; then
+            log_error "$pkg paketi depoda bulunamadi. Zorunlu paket oldugu icin faz duracak."
+            remember_unique FAILED_REQUIRED_PACKAGES "pacman/$phase: $pkg (depoda yok)"
+            return 1
         fi
-    done
+        log_warn "$pkg paketi depoda bulunamadi, opsiyonel oldugu icin atlaniyor."
+        remember_unique SKIPPED_OPTIONAL_PACKAGES "pacman/$phase: $pkg (depoda yok)"
+        return 0
+    fi
 
-    if [[ ${#not_found[@]} -gt 0 ]]; then
-        for pkg in "${not_found[@]}"; do
-            log_error "$pkg paketi depoda bulunamadi, bu zorunlu paket oldugu icin kurulum durduruldu."
-        done
+    log_info "$pkg paketi kurulu degil, kuruluyor..."
+    print_package_header "$pkg"
+    if sudo pacman -S --needed --noconfirm "$pkg"; then
+        log_ok "$pkg paketi kuruldu."
+        remember_unique INSTALLED_PACKAGES "pacman/$phase: $pkg"
+        return 0
+    fi
+
+    if [[ "$required" == "true" ]]; then
+        log_error "$pkg paketi kurulamadi. Zorunlu paket oldugu icin faz duracak."
+        remember_unique FAILED_REQUIRED_PACKAGES "pacman/$phase: $pkg"
         return 1
     fi
 
-    if [[ ${#to_install[@]} -gt 0 ]]; then
-        log_info "[$phase] ${#to_install[@]} paket kuruluyor..."
-        if ! sudo pacman -S --needed --noconfirm "${to_install[@]}"; then
-            log_error "[$phase] Pacman paket kurulumu basarisiz"
+    log_warn "$pkg paketi kurulamadi, opsiyonel oldugu icin devam ediliyor."
+    remember_unique FAILED_OPTIONAL_PACKAGES "pacman/$phase: $pkg"
+    return 0
+}
+
+install_one_aur_package() {
+    local phase="$1"
+    local pkg="$2"
+    local required="$3"
+    local jobs
+
+    if [[ -z "$AUR_CMD" ]]; then
+        if [[ "$required" == "true" ]]; then
+            log_error "AUR helper hazir degil. $pkg kurulamiyor."
+            remember_unique FAILED_REQUIRED_PACKAGES "aur/$phase: $pkg (AUR helper yok)"
             return 1
         fi
+        log_warn "AUR helper hazir degil. $pkg opsiyonel paketi atlaniyor."
+        remember_unique SKIPPED_OPTIONAL_PACKAGES "aur/$phase: $pkg (AUR helper yok)"
+        return 0
+    fi
+
+    if aur_is_installed "$pkg"; then
+        log_info "$pkg paketi zaten kurulu, atlaniyor."
+        return 0
+    fi
+
+    if ! aur_in_repo "$pkg"; then
+        if [[ "$required" == "true" ]]; then
+            log_error "$pkg paketi AUR'da bulunamadi. Zorunlu paket oldugu icin faz duracak."
+            remember_unique FAILED_REQUIRED_PACKAGES "aur/$phase: $pkg (AUR'da yok)"
+            return 1
+        fi
+        log_warn "$pkg paketi AUR'da bulunamadi, opsiyonel oldugu icin atlaniyor."
+        remember_unique SKIPPED_OPTIONAL_PACKAGES "aur/$phase: $pkg (AUR'da yok)"
+        return 0
+    fi
+
+    log_info "$pkg paketi AUR'da bulundu, kuruluyor..."
+    print_package_header "$pkg"
+    jobs="$(safe_build_jobs)"
+    if env CARGO_BUILD_JOBS="$jobs" MAKEFLAGS="-j$jobs" $AUR_CMD "$pkg"; then
+        log_ok "$pkg paketi kuruldu."
+        remember_unique INSTALLED_PACKAGES "aur/$phase: $pkg"
+        return 0
+    fi
+
+    if [[ "$required" == "true" ]]; then
+        log_error "$pkg paketi AUR'dan kurulamadi. Zorunlu paket oldugu icin faz duracak."
+        remember_unique FAILED_REQUIRED_PACKAGES "aur/$phase: $pkg"
+        return 1
+    fi
+
+    log_warn "$pkg paketi AUR'dan kurulamadi, opsiyonel oldugu icin devam ediliyor."
+    remember_unique FAILED_OPTIONAL_PACKAGES "aur/$phase: $pkg"
+    return 0
+}
+
+install_pacman_required() {
+    local phase="$1"; shift
+    local pkgs=("$@")
+    local pkg failed=0
+
+    for pkg in "${pkgs[@]}"; do
+        install_one_pacman_package "$phase" "$pkg" "true" || failed=1
+    done
+
+    if [[ "$failed" == "1" ]]; then
+        log_error "[$phase] Zorunlu pacman paketlerinden en az biri kurulamadi."
+        return 1
     fi
 }
 
 install_pacman_optional() {
     local phase="$1"; shift
     local pkgs=("$@")
-    local to_install=()
+    local pkg
 
     for pkg in "${pkgs[@]}"; do
-        if pkg_is_installed "$pkg"; then
-            log_info "$pkg paketi zaten kurulu, atlaniyor."
-        elif pkg_in_repo "$pkg"; then
-            log_info "$pkg paketi kurulu degil, kuruluyor..."
-            to_install+=("$pkg")
-        else
-            log_warn "$pkg paketi depoda bulunamadi, opsiyonel oldugu icin atlaniyor."
-        fi
+        install_one_pacman_package "$phase" "$pkg" "false" || true
     done
-
-    if [[ ${#to_install[@]} -gt 0 ]]; then
-        log_info "[$phase] ${#to_install[@]} opsiyonel paket kuruluyor..."
-        sudo pacman -S --needed --noconfirm "${to_install[@]}" || log_warn "[$phase] Bazi opsiyonel paketler kurulamadi"
-    fi
 }
 
 install_aur_required() {
     local phase="$1"; shift
     local pkgs=("$@")
-    local to_install=() not_found=()
+    local pkg failed=0
 
     for pkg in "${pkgs[@]}"; do
-        if aur_is_installed "$pkg"; then
-            log_info "$pkg paketi zaten kurulu, atlaniyor."
-        elif aur_in_repo "$pkg"; then
-            log_info "$pkg paketi AUR'da bulundu, kuruluyor..."
-            to_install+=("$pkg")
-        else
-            not_found+=("$pkg")
-        fi
+        install_one_aur_package "$phase" "$pkg" "true" || failed=1
     done
 
-    if [[ ${#not_found[@]} -gt 0 ]]; then
-        for pkg in "${not_found[@]}"; do
-            log_error "$pkg paketi AUR'da bulunamadi, bu zorunlu paket oldugu icin kurulum durduruldu."
-        done
+    if [[ "$failed" == "1" ]]; then
+        log_error "[$phase] Zorunlu AUR paketlerinden en az biri kurulamadi."
         return 1
-    fi
-
-    if [[ ${#to_install[@]} -gt 0 ]]; then
-        log_info "[$phase] ${#to_install[@]} AUR paketi kuruluyor..."
-        if ! $AUR_CMD "${to_install[@]}"; then
-            log_error "[$phase] AUR paket kurulumu basarisiz"
-            return 1
-        fi
     fi
 }
 
 install_aur_optional() {
     local phase="$1"; shift
     local pkgs=("$@")
-    local to_install=()
+    local pkg
 
     for pkg in "${pkgs[@]}"; do
-        if aur_is_installed "$pkg"; then
-            log_info "$pkg paketi zaten kurulu, atlaniyor."
-        elif aur_in_repo "$pkg"; then
-            log_info "$pkg paketi AUR'da bulundu, kuruluyor..."
-            to_install+=("$pkg")
-        else
-            log_warn "$pkg paketi AUR'da bulunamadi, opsiyonel oldugu icin atlaniyor."
+        install_one_aur_package "$phase" "$pkg" "false" || true
+    done
+}
+
+resolve_package_conflicts() {
+    local conflicts=(jack jack2 jack2-dbus pipewire-media-session)
+    local installed=()
+    local pkg
+
+    for pkg in "${conflicts[@]}"; do
+        if pacman -Qq "$pkg" &>/dev/null; then
+            installed+=("$pkg")
         fi
     done
 
-    if [[ ${#to_install[@]} -gt 0 ]]; then
-        log_info "[$phase] ${#to_install[@]} opsiyonel AUR paketi kuruluyor..."
-        $AUR_CMD "${to_install[@]}" || log_warn "[$phase] Bazi opsiyonel AUR paketleri kurulamadi"
+    if [[ ${#installed[@]} -eq 0 ]]; then
+        log_info "Paket cakismasi bulunmadi."
+        return 0
     fi
+
+    log_warn "Cakisma riski olan paketler kaldiriliyor: ${installed[*]}"
+    sudo pacman -Rns --noconfirm "${installed[@]}" || log_warn "Bazi cakisan paketler kaldirilamadi; pacman gerekirse tekrar uyarabilir."
+}
+
+print_banner() {
+    local os_name cpu_name gpu_name repo_label
+    os_name="$(grep -E '^PRETTY_NAME=' /etc/os-release 2>/dev/null | cut -d= -f2- | tr -d '"' || true)"
+    [[ -z "$os_name" ]] && os_name="Arch Linux"
+    cpu_name="$(lscpu 2>/dev/null | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' || true)"
+    [[ -z "$cpu_name" ]] && cpu_name="Bilinmiyor"
+    gpu_name="$(lspci 2>/dev/null | awk -F': ' '/VGA|3D|Display/ {print $2; exit}' || true)"
+    [[ -z "$gpu_name" ]] && gpu_name="Bilinmiyor"
+    repo_label="${REPO_DIR:-hazirlaniyor}"
+
+    clear 2>/dev/null || true
+    echo -e "${CYAN}"
+    cat <<'EOF'
+     _             _       _   _ _
+    / \   _ __ ___| |__   | \ | (_)_  __
+   / _ \ | '__/ __| '_ \  |  \| | \ \/ /
+  / ___ \| | | (__| | | | | |\  | |>  <
+ /_/   \_\_|  \___|_| |_| |_| \_|_/_/\_\
+EOF
+    echo -e "${NC}"
+    echo -e "${CYAN}-------------------------------------------------------------${NC}"
+    printf " User:            %s\n" "$USER"
+    printf " OS:              %s\n" "$os_name"
+    printf " CPU:             %s\n" "$cpu_name"
+    printf " GPU:             %s\n" "$gpu_name"
+    printf " Repo:            %s\n" "$repo_label"
+    printf " Profile:         %s | Gaming: %s | Optional: %s | DevTools: %s\n" \
+        "$INSTALL_PROFILE" "$INSTALL_GAMING" "$INSTALL_OPTIONAL_APPS" "$INSTALL_DEV_TOOLS"
+    printf " Log:             %s\n" "$LOG_FILE"
+    echo -e "${CYAN}-------------------------------------------------------------${NC}"
+    echo ""
+}
+
+print_package_report() {
+    echo ""
+    echo -e "${BOLD}${CYAN}Paket raporu${NC}"
+    echo -e "${CYAN}-------------------------------------------------------------${NC}"
+    echo -e "  Bu calismada kurulan paket: ${GREEN}${#INSTALLED_PACKAGES[@]}${NC}"
+    echo -e "  Opsiyonel atlanan paket:    ${YELLOW}${#SKIPPED_OPTIONAL_PACKAGES[@]}${NC}"
+    echo -e "  Opsiyonel basarisiz paket:  ${YELLOW}${#FAILED_OPTIONAL_PACKAGES[@]}${NC}"
+    echo -e "  Kritik basarisiz paket:     ${RED}${#FAILED_REQUIRED_PACKAGES[@]}${NC}"
+
+    if [[ ${#SKIPPED_OPTIONAL_PACKAGES[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${YELLOW}Opsiyonel oldugu icin atlananlar:${NC}"
+        printf "  - %s\n" "${SKIPPED_OPTIONAL_PACKAGES[@]}"
+    fi
+
+    if [[ ${#FAILED_OPTIONAL_PACKAGES[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${YELLOW}Opsiyonel olup kurulamayanlar:${NC}"
+        printf "  - %s\n" "${FAILED_OPTIONAL_PACKAGES[@]}"
+    fi
+
+    if [[ ${#FAILED_REQUIRED_PACKAGES[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${RED}Kurulamadigi icin fazi durduran kritik paketler:${NC}"
+        printf "  - %s\n" "${FAILED_REQUIRED_PACKAGES[@]}"
+    fi
+
+    if [[ ${#SKIPPED_OPTIONAL_PACKAGES[@]} -eq 0 && ${#FAILED_OPTIONAL_PACKAGES[@]} -eq 0 && ${#FAILED_REQUIRED_PACKAGES[@]} -eq 0 ]]; then
+        echo -e "  ${GREEN}Temiz: paket kaynakli sorun kaydedilmedi.${NC}"
+    fi
+    echo -e "${CYAN}-------------------------------------------------------------${NC}"
 }
 
 # --- Deploy Helper ---
@@ -363,6 +515,9 @@ phase_preflight() {
         /etc/pacman.conf
     sudo sed -i '/^\[options\]/a DisableDownloadTimeout\nParallelDownloads = 8' /etc/pacman.conf
     sudo pacman -Syy --noconfirm
+
+    log_step "Paket cakismalari kontrol ediliyor"
+    resolve_package_conflicts
 }
 
 # ============================================================
@@ -401,7 +556,7 @@ phase_pacman_core() {
         python python-pip python-websockets
         zsh libnotify
         networkmanager bluez bluez-utils blueman iw
-        pipewire pipewire-alsa pipewire-pulse wireplumber libpulse
+        pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber libpulse
         alsa-utils pamixer brightnessctl
         openssh cups acpi
         ufw fail2ban
@@ -1404,9 +1559,6 @@ EOF
 # MAIN
 # ============================================================
 main() {
-    log_step "Arch Linux / CachyOS Desktop Kurulumu v3"
-    log_info "Profil: $INSTALL_PROFILE | Gaming: $INSTALL_GAMING | Optional: $INSTALL_OPTIONAL_APPS | DevTools: $INSTALL_DEV_TOOLS"
-
     if [[ -f "$STATE_FILE" ]]; then
         log_info "Mevcut checkpoint bulundu, tamamlanmayan fazlardan devam ediliyor..."
     fi
@@ -1414,6 +1566,7 @@ main() {
     # --- Context (her run'da calisir, checkpoint'ten bagimsiz) ---
     detect_hardware
     resolve_repo_dir
+    print_banner
     ensure_multilib
     ensure_aur_helper
 
@@ -1465,6 +1618,7 @@ main() {
     echo -e "  Config yedegi: ${CYAN}$BACKUP_DIR${NC}"
     echo -e "  Wallpaper'lar: ${CYAN}$HOME/Pictures/Wallpapers${NC}"
     echo -e "  Log dosyasi:   ${CYAN}$LOG_FILE${NC}"
+    print_package_report
     echo ""
     if [[ "$IS_VM" == true ]]; then
         echo -e "  ${YELLOW}VM algilandi - Software rendering aktif${NC}"

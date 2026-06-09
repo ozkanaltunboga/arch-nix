@@ -55,6 +55,8 @@ INSTALL_GAMING=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanal
 
 > **Resume:** Kurulum yariida kalirsa ayni komutu tekrar calistirin. Tamamlanan fazlar otomatik atlanir.
 
+> **Akilli paket kurulumu:** Installer paketleri tek tek kontrol eder. Kurulu paketleri atlar, depoda/AUR'da bulunan eksikleri otomatik kurar, opsiyonel paket bulunamazsa devam eder ve finalde paket raporu basar. Kritik paketler basarisiz olursa ilgili faz durur.
+
 ## Özellikler
 
 ### Masaüstü Ortamı
@@ -65,6 +67,7 @@ INSTALL_GAMING=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanal
 - **SDDM** - Wayland display manager otomatik kurulum
 - **Hazır wallpaper paketi** - Repo içindeki wallpaper'lar `~/Pictures/Wallpapers` altına kopyalanır
 - **Türkçe Q klavye** - Varsayılan olarak ayarlı
+- **Dayanıklı installer** - Faz bazlı resume, sudo keepalive, paket çakışması temizliği ve final paket raporu
 
 ### Güvenlik
 - **UFW Firewall** - Varsayılan deny incoming, SSH izinli
