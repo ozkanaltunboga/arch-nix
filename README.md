@@ -10,19 +10,50 @@ Mevcut Arch tabanlı bir sistem üzerine tek komutla tam masaüstü kurulumu yap
 
 > **Uyarı:** Bu script bir işletim sistemi kurmaz. Daha önce kurulmuş Arch tabanlı bir sistem üzerinde çalıştırılmalıdır.
 
-Kurulum, [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots) reposundan ilham alınarak özelleştirilmiştir.
-
 ## Kurulum
 
-Minimal Arch / CachyOS / EndeavourOS kurulumundan sonra normal kullanıcı ile çalıştırın:
+Minimal Arch / CachyOS / EndeavourOS kurulumundan sonra normal kullanici ile calistirin.
+
+### Desktop Kurulumu (Varsayilan)
+
+Hyprland masaustu, SDDM, Quickshell widget'lari, ses, ag, tema, VM duzeltmeleri ve temel uygulamalar kurulur:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
 ```
 
-> **Root olarak çalıştırmayın!** Script kendi içinde `sudo` kullanarak gerekli sistemsel işlemleri yapar.
+### Full Kurulum
 
-> **Yedekleme:** Mevcut `~/.config` içeriği otomatik olarak `~/.config-backup-<zaman_damgasi>` altına yedeklenir.
+Desktop + agir opsiyonel uygulamalar (VS Code, Chrome, Spotify, OnlyOffice, Notion, Bottles, IntelliJ) + developer araclari (Docker, KVM, Node.js, Python, Rust, Go):
+
+```bash
+INSTALL_PROFILE=full bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
+```
+
+### Gaming Kurulumu
+
+Gaming paketleri (Steam, Lutris, Heroic, MangoHud, GameMode, GameScope, DXVK, Wine, 32-bit kutuphaneler) **varsayilan kurulumda yoktur**. Ana masaustu kurulumundan ayr calisir:
+
+```bash
+INSTALL_GAMING=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
+```
+
+> Desktop fazlari zaten tamamlanmissa otomatik atlanir, yalnizca gaming fazlari calisir.
+
+### Ortam Degiskenleri
+
+| Degisken | Varsayilan | Aciklama |
+|----------|-----------|----------|
+| `INSTALL_PROFILE` | `desktop` | `desktop` veya `full` |
+| `INSTALL_GAMING` | `0` | `1` = Gaming paketleri kurulur |
+| `INSTALL_OPTIONAL_APPS` | `0` | `1` = Agir opsiyonel uygulamalar |
+| `INSTALL_DEV_TOOLS` | `0` | `1` = Docker, KVM, dev runtime'lar |
+
+> **Root olarak calistirmayin!** Script kendi icinde `sudo` kullanarak gerekli sistemsel islemleri yapar.
+
+> **Yedekleme:** Mevcut `~/.config` icerigi otomatik olarak `~/.config-backup-<zaman_damgasi>` altina yedeklenir.
+
+> **Resume:** Kurulum yariida kalirsa ayni komutu tekrar calistirin. Tamamlanan fazlar otomatik atlanir.
 
 ## Özellikler
 
@@ -172,7 +203,11 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/
 
 ## Gaming
 
-Sistem, Linux'ta oyun oynamak için tam donanımlı olarak yapılandırılır:
+Gaming paketleri **varsayilan kurulumda yoktur** ve ayri calistirilir:
+
+```bash
+INSTALL_GAMING=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanaltunboga/arch-nix/main/install.sh)"
+```
 
 ### Gaming Paketleri
 - **Steam** + Proton (Windows oyunları çalıştırma)
@@ -249,8 +284,7 @@ Kurulum sonrası dokümantasyon `~/Documents/arch-nix-docs/` dizinine kopyalanı
 
 ## Krediler
 
-- Orijinal dotfiles: [ilyamiro/imperative-dots](https://github.com/ilyamiro/imperative-dots)
-- Fork ve özelleştirme: [ozkanaltunboga](https://github.com/ozkanaltunboga)
+- Gelistirici: [ozkanaltunboga](https://github.com/ozkanaltunboga)
 
 ## Lisans
 
