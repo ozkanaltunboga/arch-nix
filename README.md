@@ -91,6 +91,32 @@ INSTALL_GAMING=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ozkanal
 - **GameMode** (otomatik CPU/GPU optimizasyonu)
 - **GameScope** (düşük input lag micro-compositor)
 - **DXVK** + **VKD3D-Proton** (DirectX -> Vulkan)
+
+### Dock
+
+Dock `nwg-dock-hyprland` ile çalışır ve ML4W yaklaşımına benzer şekilde ayar dosyalarıyla yönetilir:
+
+```bash
+dockctl status
+dockctl theme mojave
+dockctl theme glass
+dockctl autohide on
+dockctl autohide off
+dockctl disable
+dockctl enable
+```
+
+Ayarlar `~/.config/nwg-dock-hyprland/settings/` altındadır. Varsayılan tema `mojave`; diğer temalar `glass`, `modern` ve `transparent`.
+
+### Karşılama Penceresi
+
+Hyprland oturumu açıldıktan sonra ortada hızlı başlangıç/guide penceresi açılır. Sonraki oturumlarda da görünmesini istemiyorsanız:
+
+```bash
+echo 0 > ~/.config/hypr/settings/guide-on-startup
+```
+
+Elle açmak için `SUPER + H` kullanabilirsiniz.
 - **32-bit kütüphaneler** (eski oyunlar için)
 - **Controller desteği** (Xbox, PlayStation, Steam Controller)
 

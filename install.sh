@@ -562,7 +562,8 @@ phase_pacman_core() {
         ufw fail2ban
         zram-generator earlyoom pacman-contrib
         flatpak
-        noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation ttf-jetbrains-mono
+        noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation
+        ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols
         breeze
     )
     install_pacman_required "pacman-core" "${pkgs[@]}"
@@ -582,16 +583,19 @@ phase_pacman_desktop() {
         cava
         gtk3 inotify-tools
         qt5-wayland qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
+        qt5ct
         qt6-wayland qt6-multimedia qt6-multimedia-ffmpeg qt6-5compat qt6-websockets qt6ct
+        gsettings-desktop-schemas
         power-profiles-daemon
         sddm
         papirus-icon-theme hicolor-icon-theme adwaita-icon-theme desktop-file-utils
         plymouth libva-utils
-        fastfetch grim slurp swappy playerctl imagemagick
+        fastfetch grim slurp swappy satty playerctl imagemagick
         ripgrep fd
         7zip mpv
         zoxide bat duf ncdu lazygit rsync tmux
         direnv ffmpeg tree
+        easyeffects ladspa lsp-plugins-ladspa lsp-plugins-lv2
     )
     install_pacman_required "pacman-desktop" "${pkgs[@]}"
 }
@@ -634,7 +638,6 @@ phase_pacman_hardware() {
 phase_pacman_optional() {
     local pkgs=(
         obs-studio
-        easyeffects ladspa lsp-plugins-ladspa lsp-plugins-lv2
         qbittorrent wmctrl
         nmap traceroute mtr bandwhich speedtest-cli
         android-tools
@@ -718,6 +721,7 @@ phase_aur_core_optional() {
     local pkgs=(
         swww awww
         swayosd-git swaync wlogout
+        mpvpaper adw-gtk-theme
     )
     install_aur_optional "aur-core-optional" "${pkgs[@]}"
 }
@@ -729,8 +733,7 @@ phase_aur_optional() {
     local pkgs=(
         sddm-sugar-candy-git
         ttf-udev-gothic ttf-iosevka-nerd
-        adw-gtk-theme
-        mpvpaper networkmanager-dmenu-git
+        networkmanager-dmenu-git
         onlyoffice-bin
         visual-studio-code-bin
         google-chrome
@@ -802,7 +805,9 @@ phase_dotfiles() {
     fi
     deploy "$REPO_DIR/config/programs/wlogout"    "$TARGET_CONFIG/wlogout"
     deploy "$REPO_DIR/config/programs/nwg-dock-hyprland" "$TARGET_CONFIG/nwg-dock-hyprland"
-    chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/launch.sh" 2>/dev/null || true
+    chmod +x "$TARGET_CONFIG/nwg-dock-hyprland/"*.sh 2>/dev/null || true
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$TARGET_CONFIG/nwg-dock-hyprland/dockctl.sh" "$HOME/.local/bin/dockctl"
     deploy "$REPO_DIR/config/programs/neovim/nvim" "$TARGET_CONFIG/nvim"
     deploy "$REPO_DIR/config/sessions/hyprland"    "$TARGET_CONFIG/hypr"
     find "$TARGET_CONFIG/hypr/scripts" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} + 2>/dev/null || true
@@ -988,6 +993,10 @@ phase_fonts() {
         cp -r "$REPO_FONTS/"* "$TARGET_FONTS/" 2>/dev/null || true
     fi
 
+    find "$TARGET_FONTS" -type f -exec chmod 644 {} \; 2>/dev/null
+    find "$TARGET_FONTS" -type d -exec chmod 755 {} \; 2>/dev/null
+    fc-cache -f "$TARGET_FONTS" 2>/dev/null || true
+
     if fc-match "Iosevka Nerd Font" 2>/dev/null | grep -qi "Iosevka"; then
         log_info "Iosevka Nerd Font sistemde mevcut"
     elif [ -d "$TARGET_FONTS/IosevkaNerdFont" ] && [ "$(ls -A "$TARGET_FONTS/IosevkaNerdFont" 2>/dev/null | grep -i '\.ttf')" ]; then
@@ -996,9 +1005,12 @@ phase_fonts() {
         log_warn "Iosevka Nerd Font bulunamadi; AUR font kurulumu basarisiz olmus olabilir"
     fi
 
-    find "$TARGET_FONTS" -type f -exec chmod 644 {} \; 2>/dev/null
-    find "$TARGET_FONTS" -type d -exec chmod 755 {} \; 2>/dev/null
-    fc-cache -f "$TARGET_FONTS" 2>/dev/null || true
+    if fc-match "Symbols Nerd Font" 2>/dev/null | grep -qi "Symbols"; then
+        log_info "Symbols Nerd Font ikon fallback'i sistemde mevcut"
+    else
+        log_warn "Symbols Nerd Font bulunamadi; bazi panel ikonlari eksik gorunebilir"
+    fi
+
     log_info "Font cache guncellendi"
 }
 

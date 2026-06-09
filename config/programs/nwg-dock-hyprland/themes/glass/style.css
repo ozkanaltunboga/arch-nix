@@ -1,0 +1,41 @@
+@import url("../../settings/dock-border.css");
+
+window {
+    background: rgba(24, 27, 32, 0.38);
+    border-radius: 18px;
+    border-style: solid;
+    border-color: rgba(212, 227, 255, 0.26);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 12px 32px rgba(0, 0, 0, 0.34);
+}
+
+#box {
+    padding: 8px 10px;
+}
+
+button,
+image {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #eef4ff;
+}
+
+button {
+    padding: 5px;
+    margin: 0 3px;
+    border-radius: 12px;
+    transition: background-color 140ms ease;
+}
+
+button:hover {
+    background-color: rgba(212, 227, 255, 0.20);
+}
+
+button:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+#active {
+    border-bottom: 2px solid rgba(212, 227, 255, 0.86);
+}
