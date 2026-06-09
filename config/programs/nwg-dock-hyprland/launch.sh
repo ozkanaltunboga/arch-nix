@@ -3,7 +3,14 @@ set -euo pipefail
 
 CONFIG_DIR="$HOME/.config/nwg-dock-hyprland"
 
-pkill -f "nwg-dock-hyprland" 2>/dev/null || true
+if ! command -v nwg-dock-hyprland >/dev/null 2>&1; then
+  echo "nwg-dock-hyprland is not installed" >&2
+  exit 0
+fi
+
+while IFS= read -r pid; do
+  [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+done < <(pgrep -f '(^|/)nwg-dock-hyprland([[:space:]]|$)' || true)
 sleep 0.2
 
 cd "$CONFIG_DIR"
