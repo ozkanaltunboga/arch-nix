@@ -16,7 +16,6 @@ sleep 0.2
 cd "$CONFIG_DIR"
 
 exec nwg-dock-hyprland \
-  -d \
   -p bottom \
   -a center \
   -i 48 \
