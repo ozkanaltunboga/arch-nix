@@ -74,7 +74,7 @@ trap '
 
 # --- Sudo Keepalive ---
 sudo -v || { log_error "sudo yetkisi alinamadi"; exit 1; }
-(while true; do sudo -n true; sleep 60; done) 2>/dev/null &
+(while true; do sudo -n -v 2>/dev/null || true; sleep 30; done) &
 SUDO_KEEPALIVE_PID=$!
 
 # --- Checkpoint ---
@@ -374,12 +374,19 @@ phase_aur_helper() {
         return 0
     fi
     log_info "paru kuruluyor..."
-    sudo pacman -S --needed --noconfirm git base-devel cargo || { log_error "base-devel/cargo kurulamadi"; return 1; }
+    sudo pacman -S --needed --noconfirm git base-devel rust || { log_error "base-devel/rust kurulamadi"; return 1; }
     local local_tmp
     local_tmp=$(mktemp -d)
     git clone https://aur.archlinux.org/paru.git "$local_tmp/paru" || { log_error "paru clone basarisiz"; return 1; }
-    sudo -v
-    (cd "$local_tmp/paru" && makepkg -si --noconfirm) || { log_error "paru derlenemedi"; return 1; }
+    (cd "$local_tmp/paru" && makepkg -s --noconfirm) || { log_error "paru derlenemedi"; return 1; }
+    local paru_pkg
+    paru_pkg="$(find "$local_tmp/paru" -maxdepth 1 -type f -name 'paru-[0-9]*-x86_64.pkg.tar.zst' ! -name '*debug*' | head -n1 || true)"
+    if [[ -z "$paru_pkg" ]]; then
+        log_error "paru paketi bulunamadi"
+        return 1
+    fi
+    sudo -v || { log_error "sudo yetkisi yenilenemedi"; return 1; }
+    sudo pacman -U --noconfirm "$paru_pkg" || { log_error "paru paketi kurulamadi"; return 1; }
     rm -rf "$local_tmp"
     AUR_CMD="paru -S --needed --noconfirm --skipreview --removemake --cleanafter"
     AUR_HELPER="paru"
