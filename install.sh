@@ -422,7 +422,7 @@ phase_pacman_desktop() {
         wl-clipboard cliphist
         hyprlock hypridle
         kitty neovim firefox
-        rofi-wayland pavucontrol nautilus
+        rofi pavucontrol nautilus
         nwg-dock-hyprland
         cava
         gtk3 inotify-tools
@@ -434,7 +434,7 @@ phase_pacman_desktop() {
         plymouth libva-utils
         fastfetch grim slurp swappy playerctl imagemagick
         ripgrep fd
-        p7zip mpv
+        7zip mpv
         zoxide bat duf ncdu lazygit rsync tmux
         direnv ffmpeg tree
     )
