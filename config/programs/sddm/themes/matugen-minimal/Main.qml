@@ -73,7 +73,7 @@ Rectangle {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: hasUsers ? 245 : 290
+            Layout.preferredHeight: hasUsers ? 305 : 345
             radius: 16
             color: root.base
             border.color: root.surface
@@ -81,8 +81,8 @@ Rectangle {
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 32
-                spacing: 16
+                anchors.margins: 28
+                spacing: 12
 
                 Text {
                     Layout.alignment: Qt.AlignHCenter
@@ -96,13 +96,82 @@ Rectangle {
                 Controls.ComboBox {
                     id: userCombo
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 44
+                    Layout.preferredHeight: 48
                     visible: hasUsers
                     model: userModel
                     textRole: "name"
                     currentIndex: (typeof userModel.lastIndex === "number" && userModel.lastIndex >= 0) ? userModel.lastIndex : 0
                     font.family: "JetBrains Mono"
                     font.pixelSize: 13
+                    leftPadding: 16
+                    rightPadding: 42
+
+                    background: Rectangle {
+                        radius: 12
+                        color: root.surface
+                        border.color: userCombo.activeFocus ? root.primary : "#45475a"
+                        border.width: userCombo.activeFocus ? 2 : 1
+                    }
+
+                    contentItem: Text {
+                        leftPadding: 0
+                        rightPadding: 0
+                        text: userCombo.displayText
+                        font: userCombo.font
+                        color: root.text
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+
+                    indicator: Text {
+                        x: userCombo.width - width - 14
+                        y: (userCombo.height - height) / 2
+                        text: "⌄"
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 18
+                        color: root.primary
+                    }
+
+                    popup: Controls.Popup {
+                        y: userCombo.height + 6
+                        width: userCombo.width
+                        implicitHeight: contentItem.implicitHeight
+                        padding: 4
+
+                        background: Rectangle {
+                            radius: 12
+                            color: root.base
+                            border.color: root.primary
+                            border.width: 1
+                        }
+
+                        contentItem: ListView {
+                            clip: true
+                            implicitHeight: Math.min(contentHeight, 180)
+                            model: userCombo.popup.visible ? userCombo.delegateModel : null
+                            currentIndex: userCombo.highlightedIndex
+                        }
+                    }
+
+                    delegate: Controls.ItemDelegate {
+                        width: userCombo.width - 8
+                        height: 38
+                        highlighted: userCombo.highlightedIndex === index
+
+                        background: Rectangle {
+                            radius: 8
+                            color: highlighted ? root.surface : "transparent"
+                        }
+
+                        contentItem: Text {
+                            text: model.name
+                            font: userCombo.font
+                            color: highlighted ? root.primary : root.text
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: 10
+                            elide: Text.ElideRight
+                        }
+                    }
                 }
 
                 Rectangle {

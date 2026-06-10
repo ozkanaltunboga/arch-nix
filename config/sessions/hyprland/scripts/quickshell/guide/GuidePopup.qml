@@ -235,8 +235,8 @@ Item {
                         ColumnLayout {
                             Layout.alignment: Qt.AlignVCenter
                             spacing: root.s(2)
-                            Text { text: "Imperative"; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(15); color: root.text; Layout.alignment: Qt.AlignLeft }
-                            Text { text: "v1.0.4"; font.family: "JetBrains Mono"; font.pixelSize: root.s(11); color: root.subtext0; Layout.alignment: Qt.AlignLeft }
+                            Text { text: "arch-nix"; font.family: "JetBrains Mono"; font.weight: Font.Black; font.pixelSize: root.s(15); color: root.text; Layout.alignment: Qt.AlignLeft }
+                            Text { text: "Arch Hyprland"; font.family: "JetBrains Mono"; font.pixelSize: root.s(11); color: root.subtext0; Layout.alignment: Qt.AlignLeft }
                         }
                     }
                 }
@@ -378,21 +378,27 @@ Item {
                                 Layout.alignment: Qt.AlignVCenter
                                 spacing: root.s(2)
                                 
-                                Text { text: "System Configuration Author"; font.family: "JetBrains Mono"; font.pixelSize: root.s(11); color: root.subtext0; font.weight: Font.Medium }
+                                Text { text: "Project Maintainer"; font.family: "JetBrains Mono"; font.pixelSize: root.s(11); color: root.subtext0; font.weight: Font.Medium }
                                 
                                 // Interactive Multi-color Text
                                 Row {
                                     spacing: root.s(1)
                                     Repeater {
                                         model: [
-                                            { l: "i", c: root.red },
-                                            { l: "l", c: root.peach },
-                                            { l: "y", c: root.yellow },
+                                            { l: "o", c: root.red },
+                                            { l: "z", c: root.peach },
+                                            { l: "k", c: root.yellow },
                                             { l: "a", c: root.green },
-                                            { l: "m", c: root.sapphire },
-                                            { l: "i", c: root.blue },
-                                            { l: "r", c: root.mauve },
-                                            { l: "o", c: root.pink }
+                                            { l: "n", c: root.sapphire },
+                                            { l: "a", c: root.blue },
+                                            { l: "l", c: root.mauve },
+                                            { l: "t", c: root.pink },
+                                            { l: "u", c: root.red },
+                                            { l: "n", c: root.peach },
+                                            { l: "b", c: root.yellow },
+                                            { l: "o", c: root.green },
+                                            { l: "g", c: root.sapphire },
+                                            { l: "a", c: root.blue }
                                         ]
                                         Text {
                                             text: modelData.l
@@ -429,7 +435,7 @@ Item {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {}
+                            onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/ozkanaltunboga/arch-nix"])
                         }
                     }
 
