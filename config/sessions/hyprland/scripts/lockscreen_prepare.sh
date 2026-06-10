@@ -16,7 +16,7 @@ fi
 
 if [ -z "$source_image" ] || [ ! -f "$source_image" ]; then
     magick -size 1920x1080 gradient:"#11111b-#1e1e2e" "$CACHE_DIR/blurred_wallpaper.png"
-    magick -size 420x420 gradient:"#1e1e2e-#313244" "$CACHE_DIR/square_wallpaper.png"
+    magick -size 520x520 gradient:"#1e1e2e-#313244" "$CACHE_DIR/square_wallpaper.png"
     exit 0
 fi
 
@@ -26,12 +26,14 @@ magick "$source_image" \
     -gravity center \
     -extent 1920x1080 \
     -blur 0x18 \
-    -brightness-contrast -18x0 \
+    -modulate 88,82,100 \
+    -fill "#05070c" -colorize 20 \
     "$CACHE_DIR/blurred_wallpaper.png"
 
 magick "$source_image" \
     -auto-orient \
-    -resize "420x420^" \
+    -resize "520x520^" \
     -gravity center \
-    -extent 420x420 \
+    -extent 520x520 \
+    -modulate 104,104,100 \
     "$CACHE_DIR/square_wallpaper.png"
