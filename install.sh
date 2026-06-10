@@ -590,6 +590,7 @@ phase_pacman_desktop() {
         sddm
         papirus-icon-theme hicolor-icon-theme adwaita-icon-theme desktop-file-utils
         plymouth libva-utils
+        swayosd
         fastfetch grim slurp swappy satty playerctl imagemagick
         ripgrep fd
         7zip mpv
@@ -715,12 +716,12 @@ phase_aur_core_critical() {
 }
 
 # ============================================================
-# PHASE: aur-core-optional (swww, swayosd, swaync, wlogout)
+# PHASE: aur-core-optional (awww, swaync, wlogout)
 # ============================================================
 phase_aur_core_optional() {
     local pkgs=(
-        swww awww
-        swayosd-git swaync wlogout
+        awww
+        swaync wlogout
         mpvpaper adw-gtk-theme
     )
     install_aur_optional "aur-core-optional" "${pkgs[@]}"
