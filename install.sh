@@ -165,7 +165,7 @@ install_one_pacman_package() {
 
     log_info "$pkg paketi kurulu degil, kuruluyor..."
     print_package_header "$pkg"
-    if sudo pacman -S --needed --noconfirm "$pkg"; then
+    if yes "y" | sudo pacman -S --needed "$pkg" 2>/dev/null; then
         log_ok "$pkg paketi kuruldu."
         remember_unique INSTALLED_PACKAGES "pacman/$phase: $pkg"
         return 0
@@ -302,7 +302,7 @@ resolve_package_conflicts() {
     fi
 
     log_warn "Cakisma riski olan paketler kaldiriliyor: ${installed[*]}"
-    sudo pacman -Rns --noconfirm "${installed[@]}" || log_warn "Bazi cakisan paketler kaldirilamadi; pacman gerekirse tekrar uyarabilir."
+    yes "y" | sudo pacman -Rns "${installed[@]}" 2>/dev/null || log_warn "Bazi cakisan paketler kaldirilamadi; pacman gerekirse tekrar uyarabilir."
 }
 
 print_banner() {
@@ -1126,7 +1126,7 @@ phase_sddm() {
     sudo mkdir -p /etc/sddm.conf.d
     cat <<EOF | sudo tee /etc/sddm.conf.d/10-wayland.conf > /dev/null
 [General]
-DisplayServer=wayland
+DisplayServer=x11
 GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
 
@@ -1158,7 +1158,7 @@ EOF
 Current=sugar-candy
 
 [General]
-DisplayServer=wayland
+DisplayServer=x11
 GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
         log_info "SDDM Sugar Candy temasi yapilandirildi"
@@ -1193,7 +1193,7 @@ QMLEOF
 Current=matugen-minimal
 
 [General]
-DisplayServer=wayland
+DisplayServer=x11
 GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 EOF
         log_info "SDDM temasi yapilandirildi (matugen-minimal fallback)"
@@ -1203,6 +1203,15 @@ EOF
         sudo sed -i 's/^DisplayServer=.*/DisplayServer=x11-user/' /etc/sddm.conf.d/10-wayland.conf
         sudo sed -i 's/^GreeterEnvironment=.*/GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1,QT_QUICK_BACKEND=software/' /etc/sddm.conf.d/10-wayland.conf
         log_info "SDDM VM fix uygulandi (x11-user greeter + software rendering)"
+    fi
+
+    if [[ "$IS_INTEL" == true ]]; then
+        local CURRENT_THEME
+        CURRENT_THEME=$(grep -E '^Current=' /etc/sddm.conf.d/10-wayland.conf 2>/dev/null | cut -d= -f2 || true)
+        if [[ "$CURRENT_THEME" == "matugen-minimal" ]]; then
+            sudo sed -i 's/^Current=.*/Current=breeze/' /etc/sddm.conf.d/10-wayland.conf
+            log_info "SDDM Intel GPU: matugen-minimal -> breeze temasi (kararlilik icin)"
+        fi
     fi
 
     sudo systemctl start sddm.service 2>/dev/null || log_warn "SDDM hemen baslatilamadi; reboot sonrasi graphical.target ile tekrar denenecek."
