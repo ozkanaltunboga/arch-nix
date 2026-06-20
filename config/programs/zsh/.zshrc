@@ -38,6 +38,7 @@ export WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
 # Wayland
 export QT_QPA_PLATFORM=wayland
+export QT_QPA_PLATFORMTHEME=qt6ct
 export ELECTRON_OZONE_PLATFORM_HINT=wayland
 export GDK_BACKEND=wayland,x11
 
@@ -56,3 +57,11 @@ alias gitavail='ssh-add $HOME/Documents/keys/github_key'
 
 # ─── Ek fonksiyonlar ─────────────────────────────────────────
 source "$HOME/.config/zsh/zsh-init.sh" 2>/dev/null || true
+export LIBVA_DRIVER_NAME=iHD
+eval "$(direnv hook zsh)"
+
+# ML4W cursor shape animation
+zle-line-init() { print -n "\e[5 q" }
+zle-line-finish() { print -n "\e[1 q" }
+zle -N zle-line-init
+zle -N zle-line-finish
