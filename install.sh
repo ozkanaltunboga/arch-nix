@@ -577,7 +577,7 @@ phase_pacman_desktop() {
         hyprland xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
         wl-clipboard cliphist
         hyprlock hypridle
-        kitty neovim firefox
+        kitty neovim firefox chromium
         rofi pavucontrol nautilus
         nwg-dock-hyprland
         cava
