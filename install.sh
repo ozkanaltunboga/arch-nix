@@ -608,7 +608,7 @@ phase_pacman_hardware() {
     local pkgs=()
 
     if [[ "$IS_NVIDIA" == true ]]; then
-        pkgs+=(nvidia nvidia-utils nvidia-prime)
+        pkgs+=(nvidia nvidia-utils nvidia-settings nvidia-prime)
     fi
     if [[ "$IS_AMD" == true ]]; then
         pkgs+=(mesa vulkan-radeon libva-mesa-driver)
@@ -883,7 +883,7 @@ phase_dotfiles() {
         fi
 
         if [[ "$IS_NVIDIA" == true ]]; then
-            sed -i '/^env = WALLPAPER_DIR,/a env = LIBVA_DRIVER_NAME,nvidia\nenv = XDG_SESSION_TYPE,wayland\nenv = GBM_BACKEND,nvidia-drm\nenv = __GLX_VENDOR_LIBRARY_NAME,nvidia\nenv = WLR_NO_HARDWARE_CURSORS,1' "$HYPR_CONF"
+            sed -i '/^env = WALLPAPER_DIR,/a env = LIBVA_DRIVER_NAME,nvidia\nenv = XDG_SESSION_TYPE,wayland\nenv = GBM_BACKEND,nvidia-drm\nenv = __GLX_VENDOR_LIBRARY_NAME,nvidia\nenv = NVD_BACKEND,direct\nenv = WLR_NO_HARDWARE_CURSORS,1' "$HYPR_CONF"
             log_info "NVIDIA Wayland env'leri eklendi"
         fi
     fi
@@ -1214,6 +1214,13 @@ EOF
         fi
     fi
 
+    if [[ "$IS_NVIDIA" == true ]]; then
+        if ! grep -q 'QT_QPA_PLATFORM' /etc/sddm.conf.d/10-wayland.conf; then
+            sudo sed -i 's/^GreeterEnvironment=.*/GreeterEnvironment=QT_WAYLAND_DISABLE_WINDOWDECORATION=1,QT_QPA_PLATFORM=xcb/' /etc/sddm.conf.d/10-wayland.conf
+            log_info "SDDM NVIDIA: QT_QPA_PLATFORM=xcb eklendi"
+        fi
+    fi
+
     sudo systemctl start sddm.service 2>/dev/null || log_warn "SDDM hemen baslatilamadi; reboot sonrasi graphical.target ile tekrar denenecek."
 }
 
@@ -1309,9 +1316,34 @@ EOF
         log_step "NVIDIA yapilandirmasi"
         cat <<'EOF' | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
 options nvidia NVreg_DynamicPowerManagement=0x02
+options nvidia NVreg_PreserveVideoMemoryAllocations=1
 options nvidia-drm modeset=1
+options nvidia-drm fbdev=1
 EOF
         log_info "NVIDIA modprobe ayarlari yapilandirildi"
+
+        log_step "NVIDIA Early KMS yapilandiriliyor"
+        if grep -q '^HOOKS=' /etc/mkinitcpio.conf; then
+            if ! grep -q 'nvidia' /etc/mkinitcpio.conf; then
+                sudo sed -i 's/^HOOKS=.*/HOOKS=(base udev nvidia modconf block filesystems keyboard fsck)/' /etc/mkinitcpio.conf
+                sudo mkinitcpio -P 2>/dev/null || log_warn "mkinitcpio guncellenemedi"
+                log_info "NVIDIA Early KMS etkinlestirildi"
+            else
+                log_info "NVIDIA Early KMS zaten yapilandirilmis"
+            fi
+        fi
+
+        log_step "NVIDIA kernel parametreleri kontrol ediliyor"
+        local CMDLINE_FILE="/etc/default/grub"
+        if [ -f "$CMDLINE_FILE" ]; then
+            if ! grep -q 'nvidia-drm.modeset=1' "$CMDLINE_FILE"; then
+                sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1"/' "$CMDLINE_FILE"
+                sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || log_warn "grub config guncellenemedi"
+                log_info "NVIDIA kernel parametreleri eklendi"
+            else
+                log_info "NVIDIA kernel parametreleri zaten ayarlanmis"
+            fi
+        fi
     fi
 
     # --- Flatpak ---
