@@ -404,7 +404,7 @@ Item {
                     anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                     onClicked: { 
                         exitAnim.start(); // Trigger graceful UI exit
-                        Quickshell.execDetached(["sh", "-c", "loginctl terminate-user $USER"]); 
+                        Quickshell.execDetached(["sh", "-c", "hyprctl dispatch exit"]); 
                         Quickshell.execDetached(["sh", "-c", "echo 'close' > /tmp/qs_widget_state"]); 
                     }
                 }
@@ -867,9 +867,9 @@ Item {
                     Repeater {
                         model: ListModel {
                             ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh"; icon: ""; baseColor: "mauve"; weight: 1.0 }
-                            ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh & systemctl suspend"; icon: "ᶻ 𝗓 𐰁"; baseColor: "blue"; weight: 1.0 }
-                            ListElement { cmd: "systemctl reboot"; icon: "󰑓"; baseColor: "yellow"; weight: 2.5 }
-                            ListElement { cmd: "systemctl poweroff -i"; icon: ""; baseColor: "red"; weight: 3.5 }
+                            ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh && loginctl suspend"; icon: "ᶻ 𝗓 𐰁"; baseColor: "blue"; weight: 1.0 }
+                            ListElement { cmd: "loginctl reboot"; icon: "󰑓"; baseColor: "yellow"; weight: 2.5 }
+                            ListElement { cmd: "loginctl poweroff"; icon: ""; baseColor: "red"; weight: 3.5 }
                         }
                         
                         delegate: Rectangle {
