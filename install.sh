@@ -496,6 +496,15 @@ ensure_aur_helper() {
     fi
 }
 
+# --- Distro Detection ---
+is_cachyos() {
+    [[ -r /etc/os-release ]] && grep -qE '^ID=cachyos' /etc/os-release
+}
+
+is_endeavouros() {
+    [[ -r /etc/os-release ]] && grep -qE '^ID=endeavouros' /etc/os-release
+}
+
 # ============================================================
 # PHASE: preflight
 # ============================================================
@@ -553,7 +562,7 @@ phase_aur_helper() {
 # ============================================================
 phase_pacman_core() {
     local pkgs=(
-        wget file git psmisc fzf bc jq socat unzip pciutils
+        wget file git git-delta psmisc fzf bc jq socat unzip pciutils
         python python-pip python-websockets
         nodejs npm
         zsh libnotify
@@ -563,7 +572,7 @@ phase_pacman_core() {
         alsa-utils pamixer brightnessctl
         openssh cups acpi
         ufw fail2ban
-        zram-generator earlyoom pacman-contrib
+        zram-generator earlyoom pacman-contrib profile-sync-daemon
         flatpak
         noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation
         ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols
@@ -611,10 +620,18 @@ phase_pacman_hardware() {
     local pkgs=()
 
     if [[ "$IS_NVIDIA" == true ]]; then
-        pkgs+=(
-            nvidia nvidia-utils nvidia-settings nvidia-prime
-            lib32-nvidia-utils opencl-nvidia
-        )
+        # CachyOS'ta 'nvidia' paketi yoktur; kernel modulleri chwd ile yonetilir.
+        if is_cachyos; then
+            pkgs+=(
+                nvidia-utils nvidia-settings nvidia-prime
+                lib32-nvidia-utils opencl-nvidia
+            )
+        else
+            pkgs+=(
+                nvidia nvidia-utils nvidia-settings nvidia-prime
+                lib32-nvidia-utils opencl-nvidia
+            )
+        fi
     fi
     if [[ "$IS_AMD" == true ]]; then
         pkgs+=(mesa vulkan-radeon libva-mesa-driver)
@@ -653,7 +670,6 @@ phase_pacman_optional() {
         telegram-desktop
         syncthing
         lm_sensors fortune-mod go-yq
-        profile-sync-daemon
         breeze
     )
     install_pacman_optional "pacman-optional" "${pkgs[@]}"
@@ -1330,14 +1346,6 @@ phase_postflight() {
         log_info "Locale: en_US.UTF-8 + tr_TR.UTF-8"
     fi
 
-    # --- Git Config ---
-    log_step "Git config ayarlaniyor"
-    local GIT_NAME="${INSTALL_GIT_NAME:-ozkanaltunboga}"
-    local GIT_EMAIL="${INSTALL_GIT_EMAIL:-ozkanaltunboga@gmail.com}"
-    git config --global user.name "$GIT_NAME"
-    git config --global user.email "$GIT_EMAIL"
-    log_info "Git config: $GIT_NAME <$GIT_EMAIL>"
-
     # --- Network (BBR) ---
     log_step "Ag optimizasyonlari"
     cat <<'EOF' | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
@@ -1365,18 +1373,23 @@ EOF
 
         log_step "NVIDIA Early KMS yapilandiriliyor"
         if [[ -f /etc/mkinitcpio.conf ]]; then
-            if ! grep -q '^MODULES=.*nvidia' /etc/mkinitcpio.conf; then
-                sudo sed -i 's/^MODULES=(.*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-                log_info "NVIDIA modulleri MODULES satirina eklendi"
+            # CachyOS chwd drop-in'leri NVIDIA modullerini yonetir; MODULES/HOOKS'a dokunma.
+            if is_cachyos; then
+                log_info "CachyOS algilandi; mkinitcpio MODULES/HOOKS atlaniyor (chwd yonetiyor)"
             else
-                log_info "NVIDIA modulleri MODULES satirinda zaten mevcut"
-            fi
-            if ! grep -q 'nvidia' /etc/mkinitcpio.conf; then
-                sudo sed -i 's/^HOOKS=.*/HOOKS=(base udev nvidia nvidia_modeset nvidia_uvm nvidia_drm modconf block filesystems keyboard fsck)/' /etc/mkinitcpio.conf
+                if ! grep -q '^MODULES=.*nvidia' /etc/mkinitcpio.conf; then
+                    sudo sed -i 's/^MODULES=(.*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+                    log_info "NVIDIA modulleri MODULES satirina eklendi"
+                else
+                    log_info "NVIDIA modulleri MODULES satirinda zaten mevcut"
+                fi
+                if ! grep -qE '^HOOKS=.*nvidia' /etc/mkinitcpio.conf; then
+                    sudo sed -i 's/^HOOKS=.*/HOOKS=(base udev nvidia nvidia_modeset nvidia_uvm nvidia_drm modconf block filesystems keyboard fsck)/' /etc/mkinitcpio.conf
+                    log_info "NVIDIA Early KMS hook'lari eklendi"
+                else
+                    log_info "NVIDIA Early KMS zaten yapilandirilmis"
+                fi
                 sudo mkinitcpio -P 2>/dev/null || log_warn "mkinitcpio guncellenemedi"
-                log_info "NVIDIA Early KMS etkinlestirildi"
-            else
-                log_info "NVIDIA Early KMS zaten yapilandirilmis"
             fi
         fi
 
@@ -1384,7 +1397,9 @@ EOF
         local CMDLINE_FILE="/etc/default/grub"
         if [ -f "$CMDLINE_FILE" ]; then
             if ! grep -q 'nvidia-drm.modeset=1' "$CMDLINE_FILE"; then
-                sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1"/' "$CMDLINE_FILE"
+                # Tek veya cift tirnakli GRUB satirlarini her ikisini de destekle
+                sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"\([^\"]*\)\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1\"/" "$CMDLINE_FILE"
+                sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT='\([^']*\)'/GRUB_CMDLINE_LINUX_DEFAULT='\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1'/" "$CMDLINE_FILE"
                 sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || log_warn "grub config guncellenemedi"
                 log_info "NVIDIA kernel parametreleri eklendi"
             else
@@ -1428,8 +1443,12 @@ EOF
     if [ -f "$REPO_DIR/config/security/polkit-power-management.rules" ]; then
         sudo mkdir -p /etc/polkit-1/rules.d
         sudo cp "$REPO_DIR/config/security/polkit-power-management.rules" /etc/polkit-1/rules.d/50-power-management.rules
-        sudo systemctl restart polkit
-        log_info "Polkit power management kurali yapilandirildi"
+        if [ -f /etc/polkit-1/rules.d/50-power-management.rules ]; then
+            sudo systemctl restart polkit
+            log_info "Polkit power management kurali yapilandirildi"
+        else
+            log_warn "Polkit kurali kopyalanamadi"
+        fi
     fi
 
     cat <<'EOF' | sudo tee /etc/systemd/system/pacman-auto-update.service > /dev/null
@@ -1646,8 +1665,15 @@ EOF
     log_step "Developer araclari yapilandiriliyor"
     if [ -f "$REPO_DIR/config/dev/gitconfig" ]; then
         cp "$REPO_DIR/config/dev/gitconfig" "$HOME/.gitconfig"
-        log_info "Git global config kuruldu"
+        log_info "Git global config sablonu kuruldu"
     fi
+
+    # Repo sablonu user.name/email'i placeholder ile ezmesin; ayarlari sablonun uzerine yaz
+    local GIT_NAME="${INSTALL_GIT_NAME:-ozkanaltunboga}"
+    local GIT_EMAIL="${INSTALL_GIT_EMAIL:-ozkanaltunboga@gmail.com}"
+    git config --global user.name "$GIT_NAME"
+    git config --global user.email "$GIT_EMAIL"
+    log_info "Git config: $GIT_NAME <$GIT_EMAIL>"
 
     if ! grep -q "direnv" "$HOME/.zshrc" 2>/dev/null; then
         echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
