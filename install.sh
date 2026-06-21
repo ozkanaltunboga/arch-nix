@@ -711,6 +711,7 @@ phase_aur_core_critical() {
     local pkgs=(
         quickshell-git
         matugen-bin
+        sddm-sugar-candy-git
     )
     install_aur_required "aur-core-critical" "${pkgs[@]}"
 }
@@ -849,6 +850,31 @@ phase_dotfiles() {
         log_info "Firefox chrome temalari profile uygulandi"
     else
         log_info "Firefox profili bulunamadi. Ilk Firefox acilisinda chrome temalari ~/.config/firefox-chrome'dan kopyalanacak."
+    fi
+
+    # --- GTK / QT Theming ---
+    log_step "GTK ve Qt theming yapilandiriliyor"
+    mkdir -p "$TARGET_CONFIG/gtk-3.0" "$TARGET_CONFIG/gtk-4.0" "$TARGET_CONFIG/qt5ct" "$TARGET_CONFIG/qt6ct"
+    if [ -f "$REPO_DIR/config/programs/gtk/gtk3.css" ]; then
+        deploy "$REPO_DIR/config/programs/gtk/gtk3.css" "$TARGET_CONFIG/gtk-3.0/gtk.css"
+    fi
+    if [ -f "$REPO_DIR/config/programs/gtk/gtk4.css" ]; then
+        deploy "$REPO_DIR/config/programs/gtk/gtk4.css" "$TARGET_CONFIG/gtk-4.0/gtk.css"
+    fi
+    if [ -f "$REPO_DIR/config/programs/qt5ct/qt5ct.conf" ]; then
+        deploy "$REPO_DIR/config/programs/qt5ct/qt5ct.conf" "$TARGET_CONFIG/qt5ct/qt5ct.conf"
+    fi
+    if [ -f "$REPO_DIR/config/programs/qt6ct/qt6ct.conf" ]; then
+        deploy "$REPO_DIR/config/programs/qt6ct/qt6ct.conf" "$TARGET_CONFIG/qt6ct/qt6ct.conf"
+    fi
+
+    # --- Matugen Firefox Profili Dinamik Guncelleme ---
+    local MATUGEN_CONF="$TARGET_CONFIG/matugen/config.toml"
+    if [ -f "$MATUGEN_CONF" ] && [ -n "$FIREFOX_PROFILE_DIR" ]; then
+        sed -i "s|output_path = \"~/.mozilla/firefox/.*/chrome/matugen.css\"|output_path = \"$FIREFOX_PROFILE_DIR/chrome/matugen.css\"|" "$MATUGEN_CONF"
+        sed -i "s|output_path = \"~/.mozilla/firefox/.*/chrome/matugen-github.css\"|output_path = \"$FIREFOX_PROFILE_DIR/chrome/matugen-github.css\"|" "$MATUGEN_CONF"
+        sed -i "s|output_path = \"~/.mozilla/firefox/.*/chrome/matugen-youtube.css\"|output_path = \"$FIREFOX_PROFILE_DIR/chrome/matugen-youtube.css\"|" "$MATUGEN_CONF"
+        log_info "Matugen Firefox profil yolu guncellendi"
     fi
 
     # --- Hyprland Config Adaptasyonu ---
@@ -1297,6 +1323,14 @@ phase_postflight() {
         log_info "Locale: en_US.UTF-8 + tr_TR.UTF-8"
     fi
 
+    # --- Git Config ---
+    log_step "Git config ayarlaniyor"
+    local GIT_NAME="${INSTALL_GIT_NAME:-ozkanaltunboga}"
+    local GIT_EMAIL="${INSTALL_GIT_EMAIL:-ozkanaltunboga@gmail.com}"
+    git config --global user.name "$GIT_NAME"
+    git config --global user.email "$GIT_EMAIL"
+    log_info "Git config: $GIT_NAME <$GIT_EMAIL>"
+
     # --- Network (BBR) ---
     log_step "Ag optimizasyonlari"
     cat <<'EOF' | sudo tee /etc/sysctl.d/99-bbr.conf > /dev/null
@@ -1376,6 +1410,13 @@ EOF
         sudo cp "$REPO_DIR/config/security/jail.local" /etc/fail2ban/jail.local
         sudo systemctl restart fail2ban
         log_info "fail2ban yapilandirildi"
+    fi
+
+    if [ -f "$REPO_DIR/config/security/polkit-power-management.rules" ]; then
+        sudo mkdir -p /etc/polkit-1/rules.d
+        sudo cp "$REPO_DIR/config/security/polkit-power-management.rules" /etc/polkit-1/rules.d/50-power-management.rules
+        sudo systemctl restart polkit
+        log_info "Polkit power management kurali yapilandirildi"
     fi
 
     cat <<'EOF' | sudo tee /etc/systemd/system/pacman-auto-update.service > /dev/null
