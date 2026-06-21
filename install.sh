@@ -529,23 +529,23 @@ phase_aur_helper() {
         log_info "AUR helper zaten hazir: $AUR_HELPER"
         return 0
     fi
-    log_info "paru kuruluyor..."
-    sudo pacman -S --needed --noconfirm git base-devel rust || { log_error "base-devel/rust kurulamadi"; return 1; }
+    log_info "yay kuruluyor..."
+    sudo pacman -S --needed --noconfirm git base-devel go || { log_error "base-devel/go kurulamadi"; return 1; }
     local local_tmp
     local_tmp=$(mktemp -d)
-    git clone https://aur.archlinux.org/paru.git "$local_tmp/paru" || { log_error "paru clone basarisiz"; return 1; }
-    (cd "$local_tmp/paru" && makepkg -s --noconfirm) || { log_error "paru derlenemedi"; return 1; }
-    local paru_pkg
-    paru_pkg="$(find "$local_tmp/paru" -maxdepth 1 -type f -name 'paru-[0-9]*-x86_64.pkg.tar.zst' ! -name '*debug*' | head -n1 || true)"
-    if [[ -z "$paru_pkg" ]]; then
-        log_error "paru paketi bulunamadi"
+    git clone https://aur.archlinux.org/yay.git "$local_tmp/yay" || { log_error "yay clone basarisiz"; return 1; }
+    (cd "$local_tmp/yay" && makepkg -s --noconfirm) || { log_error "yay derlenemedi"; return 1; }
+    local yay_pkg
+    yay_pkg="$(find "$local_tmp/yay" -maxdepth 1 -type f -name 'yay-*-x86_64.pkg.tar.zst' ! -name '*debug*' | head -n1 || true)"
+    if [[ -z "$yay_pkg" ]]; then
+        log_error "yay paketi bulunamadi"
         return 1
     fi
     sudo -v || { log_error "sudo yetkisi yenilenemedi"; return 1; }
-    sudo pacman -U --noconfirm "$paru_pkg" || { log_error "paru paketi kurulamadi"; return 1; }
+    sudo pacman -U --noconfirm "$yay_pkg" || { log_error "yay paketi kurulamadi"; return 1; }
     rm -rf "$local_tmp"
-    AUR_CMD="paru -S --needed --noconfirm --skipreview --removemake --cleanafter"
-    AUR_HELPER="paru"
+    AUR_CMD="yay -S --needed --noconfirm --removemake --cleanafter"
+    AUR_HELPER="yay"
 }
 
 # ============================================================
@@ -557,7 +557,8 @@ phase_pacman_core() {
         python python-pip python-websockets
         nodejs npm
         zsh libnotify
-        networkmanager bluez bluez-utils blueman iw
+        networkmanager bluez bluez-utils blueman iw iwd wireless_tools
+        linux-firmware wireless-regdb
         pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber libpulse
         alsa-utils pamixer brightnessctl
         openssh cups acpi
@@ -610,7 +611,10 @@ phase_pacman_hardware() {
     local pkgs=()
 
     if [[ "$IS_NVIDIA" == true ]]; then
-        pkgs+=(nvidia nvidia-utils nvidia-settings nvidia-prime)
+        pkgs+=(
+            nvidia nvidia-utils nvidia-settings nvidia-prime
+            lib32-nvidia-utils opencl-nvidia
+        )
     fi
     if [[ "$IS_AMD" == true ]]; then
         pkgs+=(mesa vulkan-radeon libva-mesa-driver)
@@ -1359,9 +1363,15 @@ EOF
         log_info "NVIDIA modprobe ayarlari yapilandirildi"
 
         log_step "NVIDIA Early KMS yapilandiriliyor"
-        if grep -q '^HOOKS=' /etc/mkinitcpio.conf; then
+        if [[ -f /etc/mkinitcpio.conf ]]; then
+            if ! grep -q '^MODULES=.*nvidia' /etc/mkinitcpio.conf; then
+                sudo sed -i 's/^MODULES=(.*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+                log_info "NVIDIA modulleri MODULES satirina eklendi"
+            else
+                log_info "NVIDIA modulleri MODULES satirinda zaten mevcut"
+            fi
             if ! grep -q 'nvidia' /etc/mkinitcpio.conf; then
-                sudo sed -i 's/^HOOKS=.*/HOOKS=(base udev nvidia modconf block filesystems keyboard fsck)/' /etc/mkinitcpio.conf
+                sudo sed -i 's/^HOOKS=.*/HOOKS=(base udev nvidia nvidia_modeset nvidia_uvm nvidia_drm modconf block filesystems keyboard fsck)/' /etc/mkinitcpio.conf
                 sudo mkinitcpio -P 2>/dev/null || log_warn "mkinitcpio guncellenemedi"
                 log_info "NVIDIA Early KMS etkinlestirildi"
             else
