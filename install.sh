@@ -587,7 +587,7 @@ phase_pacman_desktop() {
         gtk3 inotify-tools
         qt5-wayland qt5-quickcontrols qt5-quickcontrols2 qt5-graphicaleffects
         qt5ct
-        qt6-wayland qt6-multimedia qt6-multimedia-ffmpeg qt6-5compat qt6-websockets qt6ct
+        qt6-wayland qt6-multimedia-ffmpeg qt6-5compat qt6-websockets qt6ct
         gsettings-desktop-schemas
         power-profiles-daemon
         sddm
