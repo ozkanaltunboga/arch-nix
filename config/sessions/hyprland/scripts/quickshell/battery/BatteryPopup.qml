@@ -867,9 +867,9 @@ Item {
                     Repeater {
                         model: ListModel {
                             ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh"; icon: ""; baseColor: "mauve"; weight: 1.0 }
-                            ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh && loginctl suspend"; icon: "ᶻ 𝗓 𐰁"; baseColor: "blue"; weight: 1.0 }
-                            ListElement { cmd: "loginctl reboot"; icon: "󰑓"; baseColor: "yellow"; weight: 2.5 }
-                            ListElement { cmd: "loginctl poweroff"; icon: ""; baseColor: "red"; weight: 3.5 }
+                            ListElement { cmd: "bash ~/.config/hypr/scripts/lock.sh && /usr/bin/systemctl suspend"; icon: "ᶻ 𝗓 𐰁"; baseColor: "blue"; weight: 1.0 }
+                            ListElement { cmd: "/usr/bin/systemctl reboot"; icon: "󰑓"; baseColor: "yellow"; weight: 2.5 }
+                            ListElement { cmd: "/usr/bin/systemctl poweroff"; icon: ""; baseColor: "red"; weight: 3.5 }
                         }
                         
                         delegate: Rectangle {

@@ -67,17 +67,17 @@ ShellRoot {
 
     Process {
         id: suspendProcess
-        command: ["loginctl", "suspend"]
+        command: ["systemctl", "suspend"]
     }
 
     Process {
         id: poweroffProcess
-        command: ["loginctl", "poweroff"]
+        command: ["systemctl", "poweroff"]
     }
 
     Process {
         id: reloadProcess
-        command: ["loginctl", "reboot"]
+        command: ["systemctl", "reboot"]
     }
 
     WlSessionLock {
