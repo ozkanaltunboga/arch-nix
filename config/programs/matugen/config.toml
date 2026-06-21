@@ -15,15 +15,15 @@ output_path = "~/.config/vesktop/themes/matugen.theme.css"
 
 [templates.firefox]
 input_path = "~/.config/matugen/templates/firefox.css"
-output_path = "~/.config/firefox-chrome/matugen.css"
+output_path = "~/.mozilla/firefox/arch-nix.default-release/chrome/matugen.css"
 
 [templates.web_github]
 input_path = "~/.config/matugen/templates/websites/github.css.template"
-output_path = "~/.config/firefox-chrome/matugen-github.css"
+output_path = "~/.mozilla/firefox/arch-nix.default-release/chrome/matugen-github.css"
 
 [templates.web_youtube]
 input_path = "~/.config/matugen/templates/websites/youtube.css.template"
-output_path = "~/.config/firefox-chrome/matugen-youtube.css"
+output_path = "~/.mozilla/firefox/arch-nix.default-release/chrome/matugen-youtube.css"
 
 [templates.neovim]
 input_path = "~/.config/matugen/templates/nvim-colors.lua.template"
