@@ -165,7 +165,7 @@ install_one_pacman_package() {
 
     log_info "$pkg paketi kurulu degil, kuruluyor..."
     print_package_header "$pkg"
-    if yes "y" | sudo pacman -S --needed "$pkg" 2>/dev/null; then
+    if sudo pacman -S --needed --noconfirm "$pkg" 2>/dev/null; then
         log_ok "$pkg paketi kuruldu."
         remember_unique INSTALLED_PACKAGES "pacman/$phase: $pkg"
         return 0
@@ -302,7 +302,7 @@ resolve_package_conflicts() {
     fi
 
     log_warn "Cakisma riski olan paketler kaldiriliyor: ${installed[*]}"
-    yes "y" | sudo pacman -Rns "${installed[@]}" 2>/dev/null || log_warn "Bazi cakisan paketler kaldirilamadi; pacman gerekirse tekrar uyarabilir."
+    sudo pacman -Rns --noconfirm "${installed[@]}" 2>/dev/null || log_warn "Bazi cakisan paketler kaldirilamadi; pacman gerekirse tekrar uyarabilir."
 }
 
 print_banner() {
@@ -1743,4 +1743,4 @@ main() {
     echo ""
 }
 
-main "$@"
+main "$@" || exit $?
