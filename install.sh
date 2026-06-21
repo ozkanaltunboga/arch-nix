@@ -567,7 +567,7 @@ phase_pacman_core() {
         flatpak
         noto-fonts noto-fonts-cjk noto-fonts-emoji ttf-liberation
         ttf-jetbrains-mono ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols
-        breeze
+        breeze-icons breeze-cursors
     )
     install_pacman_required "pacman-core" "${pkgs[@]}"
 }
@@ -654,6 +654,7 @@ phase_pacman_optional() {
         syncthing
         lm_sensors fortune-mod go-yq
         profile-sync-daemon
+        breeze
     )
     install_pacman_optional "pacman-optional" "${pkgs[@]}"
 }
