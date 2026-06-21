@@ -514,7 +514,8 @@ phase_preflight() {
         -e '/^DisableDownloadTimeout$/d' \
         /etc/pacman.conf
     sudo sed -i '/^\[options\]/a DisableDownloadTimeout\nParallelDownloads = 8' /etc/pacman.conf
-    sudo pacman -Syy --noconfirm
+    log_step "Sistem guncellemesi yapiliyor"
+    sudo pacman -Syyu --noconfirm
 
     log_step "Paket cakismalari kontrol ediliyor"
     resolve_package_conflicts
@@ -554,6 +555,7 @@ phase_pacman_core() {
     local pkgs=(
         wget file git psmisc fzf bc jq socat unzip pciutils
         python python-pip python-websockets
+        nodejs npm
         zsh libnotify
         networkmanager bluez bluez-utils blueman iw
         pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber libpulse
@@ -659,7 +661,7 @@ phase_pacman_dev() {
     local pkgs=(
         docker docker-compose
         virt-manager libvirt qemu-desktop dnsmasq dmidecode edk2-ovmf swtpm
-        nodejs npm go pyenv rustup
+        go pyenv rustup
     )
     install_pacman_optional "pacman-dev" "${pkgs[@]}"
 }
