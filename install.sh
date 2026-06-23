@@ -16,10 +16,12 @@ INSTALL_PROFILE="${INSTALL_PROFILE:-desktop}"
 INSTALL_GAMING="${INSTALL_GAMING:-0}"
 INSTALL_OPTIONAL_APPS="${INSTALL_OPTIONAL_APPS:-0}"
 INSTALL_DEV_TOOLS="${INSTALL_DEV_TOOLS:-0}"
+INSTALL_VIRTUALIZATION="${INSTALL_VIRTUALIZATION:-0}"
 
 if [[ "$INSTALL_PROFILE" == "full" ]]; then
     INSTALL_OPTIONAL_APPS=1
     INSTALL_DEV_TOOLS=1
+    INSTALL_VIRTUALIZATION=1
 fi
 
 # --- Colors ---
@@ -681,10 +683,147 @@ phase_pacman_optional() {
 phase_pacman_dev() {
     local pkgs=(
         docker docker-compose
-        virt-manager libvirt qemu-desktop dnsmasq dmidecode edk2-ovmf swtpm
         go pyenv rustup
     )
     install_pacman_optional "pacman-dev" "${pkgs[@]}"
+}
+
+# ============================================================
+# PHASE: virtualization (INSTALL_VIRTUALIZATION=1)
+# ============================================================
+phase_virtualization() {
+    log_step "Sanallaştirma (QEMU/KVM/libvirt) kuruluyor ve yapilandiriliyor"
+
+    # --- Paketler ---
+    local pkgs=(
+        qemu-desktop qemu-hw-usb-host qemu-hw-usb-redirect
+        libvirt libvirt-dbus
+        virt-manager virt-viewer
+        dnsmasq iptables-nft bridge-utils openbsd-netcat
+        dmidecode edk2-ovmf swtpm
+        usbutils pciutils
+    )
+    install_pacman_required "virtualization" "${pkgs[@]}"
+
+    # --- Kullanıcı grupları ---
+    log_step "Kullanici libvirt ve kvm gruplarina ekleniyor"
+    sudo usermod -aG libvirt,kvm "$USER" 2>/dev/null || log_warn "Kullanici gruplara eklenemedi"
+
+    # --- libvirtd daemon yapilandirmasi ---
+    log_step "libvirtd daemon yapilandiriliyor"
+    sudo mkdir -p /etc/libvirt
+    sudo sed -i 's/^#unix_sock_group = .*/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf 2>/dev/null || \
+        echo 'unix_sock_group = "libvirt"' | sudo tee -a /etc/libvirt/libvirtd.conf >/dev/null
+    sudo sed -i 's/^#unix_sock_rw_perms = .*/unix_sock_rw_perms = "0770"/' /etc/libvirt/libvirtd.conf 2>/dev/null || \
+        echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf >/dev/null
+    sudo sed -i 's/^#log_filters = .*/log_filters = "3:qemu 1:libvirt"/' /etc/libvirt/libvirtd.conf 2>/dev/null || \
+        echo 'log_filters = "3:qemu 1:libvirt"' | sudo tee -a /etc/libvirt/libvirtd.conf >/dev/null
+    sudo sed -i 's|^#log_outputs = .*|log_outputs = "2:file:/var/log/libvirt/libvirtd.log"|' /etc/libvirt/libvirtd.conf 2>/dev/null || \
+        echo 'log_outputs = "2:file:/var/log/libvirt/libvirtd.log"' | sudo tee -a /etc/libvirt/libvirtd.conf >/dev/null
+
+    # --- QEMU yapilandirmasi ---
+    log_step "QEMU yapilandiriliyor"
+    sudo sed -i 's/^#user = .*/user = "root"/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'user = "root"' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+    sudo sed -i 's/^#group = .*/group = "root"/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'group = "root"' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+    sudo sed -i 's/^#dynamic_ownership = .*/dynamic_ownership = 1/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'dynamic_ownership = 1' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+    sudo sed -i 's/^#nvram = \[.*/nvram = ["\/usr\/share\/edk2-ovmf\/x64\/OVMF_CODE.fd:\/usr\/share\/edk2-ovmf\/x64\/OVMF_VARS.fd"]/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'nvram = ["/usr/share/edk2-ovmf/x64/OVMF_CODE.fd:/usr/share/edk2-ovmf/x64/OVMF_VARS.fd"]' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+    sudo sed -i 's/^#swtpm_user = .*/swtpm_user = "tss"/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'swtpm_user = "tss"' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+    sudo sed -i 's/^#swtpm_group = .*/swtpm_group = "tss"/' /etc/libvirt/qemu.conf 2>/dev/null || \
+        echo 'swtpm_group = "tss"' | sudo tee -a /etc/libvirt/qemu.conf >/dev/null
+
+    # --- Servisleri etkinlestir ---
+    log_step "libvirt servisleri etkinlestiriliyor"
+    sudo systemctl enable --now libvirtd.service 2>/dev/null || log_warn "libvirtd servisi etkinlestirilemedi"
+    sudo systemctl enable --now virtlogd.socket 2>/dev/null || true
+    sudo systemctl enable --now virtlockd.socket 2>/dev/null || true
+
+    # --- Varsayilan network ---
+    log_step "Varsayilan libvirt network olusturuluyor"
+    if ! sudo virsh net-list --all 2>/dev/null | grep -q default; then
+        if [ -f /etc/libvirt/qemu/networks/default.xml ]; then
+            sudo virsh net-define /etc/libvirt/qemu/networks/default.xml 2>/dev/null || log_warn "Default network tanimlanamadi"
+        else
+            sudo virsh net-define /dev/stdin <<'EOF' 2>/dev/null || log_warn "Default network tanimlanamadi"
+<network>
+  <name>default</name>
+  <bridge name='virbr0'/>
+  <forward mode='nat'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.122.2' end='192.168.122.254'/>
+    </dhcp>
+  </ip>
+</network>
+EOF
+        fi
+    fi
+    sudo virsh net-autostart default 2>/dev/null || true
+    sudo virsh net-start default 2>/dev/null || true
+
+    # --- Varsayilan depolama havuzu ---
+    log_step "Varsayilan depolama havuzu olusturuluyor"
+    if ! sudo virsh pool-list --all 2>/dev/null | grep -q default; then
+        sudo mkdir -p /var/lib/libvirt/images
+        sudo virsh pool-define-as default dir - - - - /var/lib/libvirt/images 2>/dev/null || log_warn "Default pool tanimlanamadi"
+    fi
+    sudo virsh pool-build default 2>/dev/null || true
+    sudo virsh pool-autostart default 2>/dev/null || true
+    sudo virsh pool-start default 2>/dev/null || true
+
+    # --- VFIO / IOMMU hazirligi (pasif, GPU passthrough icin) ---
+    log_step "VFIO/IOMMU hazirligi yapiliyor (pasif)"
+    sudo mkdir -p /etc/modprobe.d
+    cat <<'EOF' | sudo tee /etc/modprobe.d/vfio.conf >/dev/null
+# VFIO passthrough hazirligi. GPU passthrough icin vfio-pci ids= satirina
+# PCI ID'lerini ekle: options vfio-pci ids=10de:....,10de:....
+options vfio-pci ids=
+options vfio-pci disable_vga=1
+options vfio_iommu_type1 allow_unsafe_interrupts=1
+EOF
+
+    if grep -q '^MODULES=' /etc/mkinitcpio.conf; then
+        if ! grep -q 'vfio' /etc/mkinitcpio.conf; then
+            sudo sed -i 's/^MODULES=(.*/MODULES=(vfio vfio_iommu_type1 vfio_pci vfio_virqfd)/' /etc/mkinitcpio.conf
+            sudo mkinitcpio -P 2>/dev/null || log_warn "mkinitcpio guncellenemedi"
+            log_info "VFIO modulleri initramfs'e eklendi"
+        else
+            log_info "VFIO modulleri zaten mevcut"
+        fi
+    fi
+
+    local CMDLINE_FILE="/etc/default/grub"
+    if [ -f "$CMDLINE_FILE" ]; then
+        local iommu_param
+        if [[ "$IS_AMD" == true ]]; then
+            iommu_param="amd_iommu=on iommu=pt"
+        else
+            iommu_param="intel_iommu=on iommu=pt"
+        fi
+        if ! grep -q 'iommu=' "$CMDLINE_FILE"; then
+            sudo sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"\(.*\)\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $iommu_param\"/" "$CMDLINE_FILE"
+            sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || log_warn "grub config guncellenemedi"
+            log_info "IOMMU kernel parametreleri eklendi: $iommu_param"
+        else
+            log_info "IOMMU kernel parametreleri zaten mevcut"
+        fi
+    fi
+
+    # --- AppArmor/SELinux olmayan sistemlerde soket izinleri ---
+    log_step "libvirt soket izinleri kontrol ediliyor"
+    sudo systemctl restart libvirtd.service 2>/dev/null || true
+    sleep 1
+    if [ -S /var/run/libvirt/libvirt-sock ]; then
+        sudo chmod 770 /var/run/libvirt/libvirt-sock 2>/dev/null || true
+        sudo chown root:libvirt /var/run/libvirt/libvirt-sock 2>/dev/null || true
+        log_info "libvirt soket izinleri ayarlandi"
+    fi
+
+    log_info "Sanallaştirma kurulumu tamamlandi. Grup degisikligi icin cikis yapip tekrar giris yapin."
 }
 
 # ============================================================
@@ -1726,6 +1865,13 @@ main() {
         run_phase "pacman-dev" phase_pacman_dev "true"
     else
         log_info "pacman-dev fasi atlaniyor (INSTALL_DEV_TOOLS=0)"
+    fi
+
+    # --- Virtualization ---
+    if [[ "$INSTALL_VIRTUALIZATION" == "1" ]]; then
+        run_phase "virtualization" phase_virtualization
+    else
+        log_info "virtualization fasi atlaniyor (INSTALL_VIRTUALIZATION=0)"
     fi
 
     # --- Dotfiles & config ---
